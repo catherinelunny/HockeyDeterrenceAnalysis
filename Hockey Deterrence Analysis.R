@@ -1,6 +1,8 @@
 library(dplyr)
+library(ggplot2)
+library(tidyverse)
 
-plays_players1 <- read.csv("/Users/catherinelunny/Downloads/archive/game_plays_players.csv")
+plays_players1 <- read.csv("/Users/catherinelunny/Downloads/archive/plays_players.csv")
 
 penalties1 <- read.csv("/Users/catherinelunny/Downloads/archive/game_penalties.csv")
 
@@ -10,14 +12,10 @@ plays_players <- data.frame(plays_players1)
 penalties <- data.frame(penalties1)
 players <- data.frame(players1)
 
-filtered_plays <- plays_players %>%
-  filter(playerType == "PenaltyOn" | playerType == "Hitter") %>%
-  filter(play_id %in% penalties$'play_id')
-  
 filtered_penalties <- penalties %>%
   filter(play_id %in% filtered_plays$'play_id')
 
-complete_data <- cbind(filtered_plays, filtered_penalties)
+complete_data <- cbind(plays_players, filtered_penalties)
 
 unique_elements <- unique(complete_data$player_id)
 print(unique_elements)
@@ -28,8 +26,12 @@ complete_data <- complete_data[, c("play_id", "game_id", "player_id", "playerTyp
 for (number in unique_elements) {
   filtered_data <- complete_data %>%
     filter(player_id == number)
-  unique_values <- unique(filtered_data$game_id)
-  hist(filtered_data$'game_id', breaks = unique_values, col = "blue", main = number, freq = TRUE)
+  graph <- ggplot(filtered_data, aes(x = game_id)) + 
+    geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+    labs(title = number, x = "Game", y = "Frequency")
+  print(graph)
+  file_name <- "/Users/catherinelunny/Downloads/archive/histogram.png"
+  ggsave(file_name = file_path, plot = graph)
 }
 
 complete_data <- complete_data %>%
@@ -75,6 +77,7 @@ scatter_plot <- ggplot(data = sorted_df, aes(x = cumPlayers , y = cumPlays)) +
   theme_minimal() 
 
 print(scatter_plot)
+png("/Users/catherinelunny/Downloads/scatterplot.png")
 
 
 #creating data frames for different penalty types- 
@@ -100,5 +103,3 @@ match <- complete_data %>%
   filter(penaltySeverity == 'Match')
 
 
-  
-  
