@@ -1,23 +1,3 @@
-library(dplyr)
-library(ggplot2)
-library(tidyverse)
-
-# Open data
-plays_players <- read.csv("data/plays_players.csv")
-penalties <- read.csv("data/game_penalties.csv")
-players <- read.csv("data/player_info.csv")
-
-
-filtered_penalties <- penalties %>%
-  filter(play_id %in% filtered_plays$'play_id')
-
-complete_data <- cbind(plays_players, filtered_penalties)
-
-unique_elements <- unique(complete_data$player_id)
-print(unique_elements)
-
-complete_data <- complete_data[, c("play_id", "game_id", "player_id", "playerType", "penaltySeverity", "penaltyMinutes")]
-
 #making histograms for each player's penalties
 for (number in unique_elements) {
   filtered_data <- complete_data %>%
@@ -97,5 +77,3 @@ penaltyShot <- complete_data %>%
 
 match <- complete_data %>%
   filter(penaltySeverity == 'Match')
-
-

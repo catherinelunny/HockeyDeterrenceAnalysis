@@ -1,0 +1,48 @@
+---
+title: "Exploratory analysis of penalties"
+format:
+  html:
+    embed-resources: true
+editor: visual
+---
+
+# Data description
+
+Where the data is from? What are the observations (note there can be several types -- players, plays, penalties), and how many of them? What's the time period covered? What's the geography covered? Is there missing data?
+
+```{r,echo=F,message=F}
+library(tidyverse)
+library(here)
+players <- read.csv(here::here("data/player_info.csv"))
+```
+
+## Example 1: heights
+
+An example of plotting height:
+
+```{r}
+ggplot(data = players, aes(x = height_cm)) +
+  geom_histogram() +
+  theme_minimal() +
+  labs(x="Height (cm)", y = "Count")
+```
+
+Looks weird. What is there space between bars?
+
+```{r}
+players %>% 
+  count(height_cm)
+```
+
+It looks like height is ordered categorical variable, not a continuous one. Weird!
+
+## Example 2: national origins of players
+
+48% come from Canada, more than from the US. Interesting! I wonder if nationality can predict penalties.
+
+```{r}
+players %>% 
+  count(nationality) %>% 
+  mutate(pct = round(n / sum(n),2)) %>% 
+  arrange(-n)
+```
