@@ -8,7 +8,7 @@ penalties <- read.csv("data/game_penalties.csv")
 players <- read.csv("data/player_info.csv")
 
 filtered_penalties <- penalties %>%
-  filter(play_id %in% c$'play_id')
+  filter(play_id %in% plays_players$'play_id')
 
 complete_data <- cbind(plays_players, filtered_penalties)
 
