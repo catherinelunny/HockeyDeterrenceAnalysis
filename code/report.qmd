@@ -14,7 +14,19 @@ Where the data is from? What are the observations (note there can be several typ
 library(tidyverse)
 library(here)
 players <- read.csv(here::here("data/player_info.csv"))
+penalties <- read.csv(here::here("data/game_penalties.csv"))
+player_plays <- read.csv(here::here("data/plays_players.csv"))
 ```
+
+## Number of Observations
+
+```{r}
+nrow(players)
+nrow(penalties)
+nrow(player_plays)
+```
+
+Since the penalties dataset has more observations than players, this shows that there are players who have committed more than one penalty.
 
 ## Example 1: heights
 
@@ -45,4 +57,56 @@ players %>%
   count(nationality) %>% 
   mutate(pct = round(n / sum(n),2)) %>% 
   arrange(-n)
+```
+
+## primary position
+
+Are players that play certain positions more prone to causing penalties?
+
+```{r}
+players %>%
+  count(primaryPosition) 
+```
+
+## Dominant Hand
+
+Do right-handed players have more penalties than left-handed players?
+
+```{r}
+players %>%
+  count(shootsCatches)
+```
+
+More lefties than righties is interesting.
+
+## Types of Penalties
+
+```{r}
+penalties %>%
+  count(penaltySeverity)
+```
+
+## Penalty Minutes
+
+```{r}
+ggplot(data = penalties, aes(x = penaltyMinutes)) +
+  geom_histogram() +
+  theme_minimal() +
+  labs(x="Penalty Minutes", y = "Occurences")
+```
+
+A large majority of the penalties only had two minute punishments, while there are few occurrences of 5 and 10 minute penalties. Could this show deterrence? Are players who get a 10 minute penalty unlikely to commit penalties in the future? Could look at the timeline of this.
+
+```{r}
+ggplot(data = player_plays, aes(x = player_id)) +
+  geom_histogram(binwidth = 0.5) +
+  theme_minimal() +
+  labs(x="Player ID", y = "Penalty Count")
+```
+
+There is definitely a range- some players have very few penalties whereas other players have hundreds.
+
+```{r}
+player_plays %>%
+  count(player_id)
 ```
