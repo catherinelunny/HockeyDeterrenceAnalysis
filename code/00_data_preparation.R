@@ -1,5 +1,3 @@
-library(dplyr)
-library(ggplot2)
 library(tidyverse)
 
 # Open data
@@ -16,3 +14,5 @@ unique_elements <- unique(complete_data$player_id)
 print(unique_elements)
 
 complete_data <- complete_data[, c("play_id", "game_id", "player_id", "playerType", "penaltySeverity", "penaltyMinutes")]
+
+saveRDS(complete_data,"intermediate_data/complete_data.rds")
