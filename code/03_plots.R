@@ -171,7 +171,7 @@ sorted_df1$cumPlayers <- cumsum(sorted_df1$playerPercentages)
 scatter_plot <- ggplot(data = sorted_df1, aes(x = cumPlayers , y = cumPlays)) +
   geom_point() +  
   labs(x = "% of players", y = "% of total penalty time",
-       title = "Concentration of total penalty time among players") +
+       title = "Concentration of total penalty time among all players") +
   theme_minimal() 
 
 ggsave("results/concentration_plot_allplays.png",scatter_plot,bg = "white")
@@ -207,7 +207,7 @@ median(careers1$total_penalty_minutes)
 p <- ggplot(careers1, aes(x = total_penalty_minutes)) +
   geom_histogram(color="black", fill="white") +
   theme_minimal() +
-  labs(x= "Total minutes of penality during career", y ="Count of players",
+  labs(x= "Total minutes of penality during career- All Players", y ="Count of players",
        caption = "Median is 369 minutes (~6 hours).")
 
 ggsave("results/total_penalty_minutes_during_career_allplayers.png",p,bg="white")
@@ -232,7 +232,7 @@ p <- ggplot(career_data1,
             aes(x = game_percentile,
                 y = penalty_minutes_share)) +
   geom_boxplot() +
-  labs(x = "Percentile of player's career timeline (left = earlier in career)",
+  labs(x = "Percentile of every player's career timeline (left = earlier in career)",
        y = "Share of penalty minutes over whole career",
        caption = "Each dot shows the contribution of each player's penalties\nduring the career stage to the total of penalty minutes over the career.\nEach player's career is split into 10 percentiles based on play_id.") +
   theme_minimal()
@@ -250,10 +250,325 @@ print(p)
 # ggplot(complete_data , aes(x = game_id, group = player_id, color = player_id)) +
   # geom_histogram(binwidth = 500)
 
-# complete_data$game_id <- as.character(complete_data$game_id)
-# complete_data$player_id <- as.character(complete_data$player_id)
+#complete_data$game_id <- as.character(complete_data$game_id)
+#complete_data$player_id <- as.character(complete_data$player_id)
 
 # plotting with player_id and game_id of type character, takes a really long time to run
 # ggplot(complete_data , aes(x = player_id, fill = game_id)) +
   # geom_bar()
 
+all_plays$game_id <- as.character(all_plays$game_id)
+all_plays$player_id <- as.character(all_plays$player_id)
+all_plays$year <- substr(all_plays$game_id, 1, 4)
+
+#making a data frame for each year
+year2000 <- filter(all_plays, year == "2000")
+year2001 <- filter(all_plays, year == "2001")
+year2002 <- filter(all_plays, year == "2002")
+year2003 <- filter(all_plays, year == "2003")
+year2004 <- filter(all_plays, year == "2004")
+year2005 <- filter(all_plays, year == "2005")
+year2006 <- filter(all_plays, year == "2006")
+year2007 <- filter(all_plays, year == "2007")
+year2008 <- filter(all_plays, year == "2008")
+year2009 <- filter(all_plays, year == "2009")
+year2010 <- filter(all_plays, year == "2010")
+year2011 <- filter(all_plays, year == "2011")
+year2012 <- filter(all_plays, year == "2012")
+year2013 <- filter(all_plays, year == "2013")
+year2014 <- filter(all_plays, year == "2014")
+year2015 <- filter(all_plays, year == "2015")
+year2016 <- filter(all_plays, year == "2016")
+year2017 <- filter(all_plays, year == "2017")
+year2018 <- filter(all_plays, year == "2018")
+year2019 <- filter(all_plays, year == "2019")
+year2020 <- filter(all_plays, year == "2020")
+year2021 <- filter(all_plays, year == "2021")
+year2022 <- filter(all_plays, year == "2022")
+
+games <- ggplot(data = all_plays) + 
+  geom_histogram(mapping = aes(x = game_id))
+ggsave("results/games.png",p,bg="white")
+
+player_games2000 <- year2000 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+fixedwindow_2000 <- filter(player_games2000, penalty_count == 2)
+
+
+# Bar graph showing the distribution of all of the games played by players who had 2 penalties in 2000
+fixedwindow2000 <- ggplot(fixedwindow_2000, aes(x = player_id, y = game_count) ) +
+  geom_bar(stat = "identity")
+print(fixedwindow2000)
+
+player_games2001 <- year2001 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+player_games2002 <- year2002 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+player_games2003 <- year2003 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+player_games2004 <- year2004 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+player_games2005 <- year2005 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+player_games2006 <- year2006 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+player_games2007 <- year2007 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+player_games2008 <- year2008 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+player_games2009 <- year2009 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+player_games2010 <- year2010 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+player_games2011 <- year2011 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+player_games2012 <- year2012 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+player_games2013 <- year2013 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+player_games2014 <- year2014 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+player_games2015 <- year2015 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+player_games2016 <- year2016 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+player_games2017 <- year2017 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+player_games2018 <- year2018 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+# Trial Analysis for the year 2019 
+player_games2019 <- year2019 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+#plot of number of penalties a player had in a given year
+filtered_year2019 <- filter(year2019, playerType == "PenaltyOn")
+filtered_year2019 <- distinct(filtered_year2019)
+plays2019 <- ggplot(filtered_year2019,
+                    aes(x = player_id)) +
+  geom_bar(stat = "count")
+print(plays2019)
+
+# attempt at using the method outlined in the paper, a probability distribution of the amount of games in between each penalty for players
+fixedwindow_2019 <- filter(player_games2019, penalty_count == 2)
+
+twopenalties2019 <- filter(year2019, player_id %in% fixedwindow_2019$player_id)
+twopenalties2019 <- filter(twopenalties2019, playerType == "PenaltyOn")
+twopenalties2019 <- distinct(twopenalties2019)
+
+twopenalties2019 <- twopenalties2019 %>%
+  mutate(game_id = as.numeric(game_id))
+
+result2019 <- twopenalties2019 %>%
+  group_by(player_id) %>%
+  summarise(game_id_difference = diff(game_id))
+
+result2019$percent <- result2019$game_id_difference / n_distinct(unique(year2019$game_id))
+
+# These players had percentages that were over 100%, removed the observations just to be able to look at the plot. Have to determine a new way to determine the length of time between penalties 
+result2019 <- filter(result2019, player_id != 8480021)
+result2019 <- filter(result2019, player_id != 8480944)
+result2019 <- filter(result2019, player_id != 8479382)
+
+#graph of time between penalties vs. probability
+fixedwindow20191 <- ggplot(result2019, aes(x = game_id_difference, y = percent)) +
+  geom_bar(stat = "identity", width = 50)
+print(fixedwindow20191)
+
+# Bar graph showing the distribution of all of the games played by players who had 2 penalties in 2000
+fixedwindow2019 <- ggplot(fixedwindow_2019, aes(x = player_id, y = game_count) ) +
+  geom_bar(stat = "identity")
+print(fixedwindow2019)
+
+player_games2020 <- year2020 %>%
+  group_by(player_id) %>%
+  summarize(game_count = n_distinct(unique(game_id)),
+            penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
+  )
+
+# Print the result
+print(player_games)
+
+#plots of total number of games played in a year for each player
+game_count_bar <- ggplot(data = player_games) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5)
+print(game_count_bar)
+
+game_count_bar2000 <- ggplot(data = player_games2000) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
+  ggtitle("2000 Games Played")
+print(game_count_bar2000)
+
+game_count_bar2001 <- ggplot(data = player_games2001) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
+  ggtitle("2001 Games Played")
+print(game_count_bar2001)
+
+game_count_bar2002 <- ggplot(data = player_games2002) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
+  ggtitle("2002 Games Played")
+print(game_count_bar2002)
+
+game_count_bar2003 <- ggplot(data = player_games2003) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
+  ggtitle("2003 Games Played")
+print(game_count_bar2003)
+
+game_count_bar2004 <- ggplot(data = player_games2004) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
+  ggtitle("2004 Games Played")
+print(game_count_bar2004)
+
+game_count_bar2005 <- ggplot(data = player_games2005) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
+  ggtitle("2005 Games Played")
+print(game_count_bar2005)
+
+game_count_bar2006 <- ggplot(data = player_games2006) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
+  ggtitle("2006 Games Played")
+print(game_count_bar2006)
+
+game_count_bar2007 <- ggplot(data = player_games2007) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
+  ggtitle("2007 Games Played")
+print(game_count_bar2007)
+
+game_count_bar2008 <- ggplot(data = player_games2008) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
+  ggtitle("2008 Games Played")
+print(game_count_bar2008)
+
+game_count_bar2009 <- ggplot(data = player_games2009) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
+  ggtitle("2009 Games Played")
+print(game_count_bar2009)
+
+game_count_bar2010 <- ggplot(data = player_games2010) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
+  ggtitle("2010 Games Played")
+print(game_count_bar2010)
+
+game_count_bar2011 <- ggplot(data = player_games2011) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
+  ggtitle("2011 Games Played")
+print(game_count_bar2011)
+
+game_count_bar2012 <- ggplot(data = player_games2012) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
+  ggtitle("2012 Games Played")
+print(game_count_bar2012)
+
+game_count_bar2013 <- ggplot(data = player_games2013) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
+  ggtitle("2013 Games Played")
+print(game_count_bar2013)
+
+game_count_bar2014 <- ggplot(data = player_games2014) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
+  ggtitle("2014 Games Played")
+print(game_count_bar2014)
+
+game_count_bar2015 <- ggplot(data = player_games2015) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
+  ggtitle("2015 Games Played")
+print(game_count_bar2015)
+
+game_count_bar2016 <- ggplot(data = player_games2016) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
+  ggtitle("2016 Games Played")
+print(game_count_bar2016)
+
+game_count_bar2017 <- ggplot(data = player_games2017) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
+  ggtitle("2017 Games Played")
+print(game_count_bar2017)
+
+game_count_bar2018 <- ggplot(data = player_games2018) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
+  ggtitle("2018 Games Played")
+print(game_count_bar2018)
+
+game_count_bar2019 <- ggplot(data = player_games2019) +
+  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 10, alpha = 0.5) +
+  ggtitle("2019 Games Played")
+print(game_count_bar2019)
+  
