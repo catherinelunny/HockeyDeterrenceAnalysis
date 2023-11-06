@@ -40,13 +40,23 @@ scatter_plot <- ggplot(data = sorted_df, aes(x = cumPlayers , y = cumPlays)) +
   labs(x = "Players", y = "Penalties", title = "Scatter Plot") +
   theme_minimal() 
 
-print(scatter_plot)
-ggsave(filename = "players-penalties-scatter.png")
+ggsave(filename = "results/players-penalties-scatter.png",
+       plot = scatter_plot,bg = "white")
 
-# histogram where player_id and game_id are of type integer
-ggplot(complete_data, aes(x = player_id, group = game_id, color = game_id)) +
-  geom_histogram(binwidth = 500, alpha = 1)
-ggsave(filename = "penalty-times.png")
+# Alex' snippet
+# Summary table
+tab_games_by_players <- complete_data %>% 
+  group_by(player_id) %>% 
+  summarise(unique_games = length(unique(game_id)))
+
+# Histogram with the distribtuion of games played from the summary table
+p <- ggplot(tab_games_by_players, 
+            aes(x = unique_games)) +
+  geom_histogram(bins = 100) +
+  theme_minimal() +
+  labs(x="# of unique games", y= "# of players")
+
+ggsave(filename = "results/hist_games_played.png",plot = p, bg = "white")
 
 # takes a really long time to run
 # ggplot(complete_data , aes(x = game_id, group = player_id, color = player_id)) +
