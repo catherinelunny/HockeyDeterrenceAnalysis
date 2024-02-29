@@ -1,3 +1,5 @@
+library(tidyverse)
+
 all_player_plays <- readRDS("intermediate_data/all_player_plays.rds")
 normalized_player_data <- readRDS("intermediate_data/normalized_player_data.rds")
 averages <- readRDS("intermediate_data/averages.rds")

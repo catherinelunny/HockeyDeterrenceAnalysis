@@ -1,3 +1,5 @@
+library(tidyverse)
+
 # Alex' snippet
 tab_games_by_players <- readRDS("intermediate_data/tab_games_by_players.rds")
 all_player_plays <- readRDS("intermediate_data/all_player_plays.rds")
