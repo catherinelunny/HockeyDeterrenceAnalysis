@@ -3,7 +3,7 @@ library(patchwork)
 
 season20192020 <- readRDS("intermediate_data/season20192020.rds")
 waitingtimes20192020 <- readRDS("intermediate_data/waitingtimes20192020.rds")
-game_count2019 <- 1215
+game_count2019 <- n_distinct(season20192020$game_id)
 penaltygames20192020 <- readRDS("intermediate_data/penaltygames20192020.rds")
 fixedwindow_20192020 <- readRDS("intermediate_data/fixedwindow_20192020.rds")
 fixedwindow3pen_20192020 <- readRDS("intermediate_data/fixedwindow3pen_20192020.rds") 
@@ -62,7 +62,7 @@ quantiles_by_group <- all_waitingtimes %>%
 #graph that includes the observed distributions and the 2.5 percentile and 97.5 percentile of the random distributions
 everything2pen <- waitingtimes20192020plot +
   geom_histogram(data = quantiles_by_group, aes(x = game_difference, y = quantile_2.5), stat = "identity", fill = "red", alpha = 0.5) +
-  geom_histogram(data = quantiles_by_group, aes(x = game_difference, y = quantile_97.5), stat = "identity", fill = "red", alpha = 0.5) 
+  geom_histogram(data = quantiles_by_group, aes(x = game_difference, y = quantile_97.5), stat = "identity", fill = "blue", alpha = 0.5) 
 
 ggsave("results/2019twopenaltiesdistribution_CI.png",everything2pen)
 

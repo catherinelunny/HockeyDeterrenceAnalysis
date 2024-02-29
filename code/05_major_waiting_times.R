@@ -11,6 +11,7 @@ threemajor_waitingtimes20192020 <- readRDS("intermediate_data/threemajor_waiting
 four_major_players20192020 <- readRDS("intermediate_data/four_major_players20192020.rds")
 four_majors20192020 <- readRDS("intermediate_data/four_majors20192020.rds")
 fourmajor_waitingtimes20192020 <- readRDS("intermediate_data/fourmajor_waitingtimes20192020.rds")
+game_count2019 <- n_distinct(season20192020$game_id)
 
 #creating the null distribution line for the plot
 nulldist <- data.frame(c(0:60))
