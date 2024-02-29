@@ -175,7 +175,7 @@ for (i in 1:1000) {
   randompenalties4 <- data.frame(Player = four_major_players20192020$player_id, first_penalty = NA, second_penalty = NA, third_penalty = NA, fourth_penalty = NA)
   for (player in 1:nrow(randompenalties4)) {
     game_count <- four_major_players20192020$game_count[player]
-    randomgames <- sort(sample(1:game_count, 4))
+    randomgames <- sort(sample(1:game_count, 4, replace = TRUE))
     randompenalties4$first_penalty[player] <- randomgames[1]
     randompenalties4$second_penalty[player] <- randomgames[2]
     randompenalties4$third_penalty[player] <- randomgames[3]
