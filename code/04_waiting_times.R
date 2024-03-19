@@ -18,7 +18,8 @@ nulldist$y <- (2 * (game_count2019 - nulldist$x)) / (game_count2019 * (game_coun
 
 #graph of time between penalties vs. probability
 waitingtimes20192020plot <- ggplot() +
-  geom_histogram(data = waitingtimes20192020, aes(x = game_difference, y = distribution), stat = "identity", fill = "black", alpha = 1.0, width = 2) +
+  geom_histogram(data = waitingtimes20192020, aes(x = game_difference,
+                                                  y = distribution), stat = "identity", fill = "black", alpha = 1.0, width = 2) +
   geom_line(data = nulldist, aes(x = x, y = y)) +
   labs(x = "\u03C4 (Games)", y = "p(\u03C4)")
 
@@ -64,7 +65,43 @@ everything2pen <- waitingtimes20192020plot +
   geom_histogram(data = quantiles_by_group, aes(x = game_difference, y = quantile_2.5), stat = "identity", fill = "red", alpha = 0.5) +
   geom_histogram(data = quantiles_by_group, aes(x = game_difference, y = quantile_97.5), stat = "identity", fill = "blue", alpha = 0.5) 
 
-ggsave("results/2019twopenaltiesdistribution_CI.png",everything2pen)
+# AK: rework histogram
+waitingtimes_2019_2020_count <- waitingtimes20192020 %>% 
+  #mutate(distr_binned = cut(distribution,
+  #                          breaks = unique(quantile(distribution, probs = seq.int(0,1, by = 1 / max(game_difference)))), 
+  #                          include.lowest = TRUE)) %>% 
+  #mutate(distr_round = round(distribution,5)) %>% 
+  group_by(game_difference) %>% 
+  summarize(n = n()) %>% 
+  arrange(game_difference) %>% 
+  tidyr::complete(game_difference = min(game_difference):max(game_difference)) %>% 
+  mutate(n = ifelse(is.na(n),0,n)) %>% 
+  left_join(., nulldist, by = c("game_difference" = "x")) %>% 
+  rename(distribution = y)
+  
+
+p <- ggplot(data = waitingtimes_2019_2020_count,
+       aes(x = game_difference,
+                                        y = n,
+                                        group = 1)) +
+  geom_point() +
+  geom_line() +
+  scale_y_continuous(limits = c(0,NA)) +
+  scale_x_continuous(breaks = 1:31) +
+  labs(x = "Game difference", y = "Count of games")+
+  theme_minimal() +
+  theme(panel.grid.minor = element_blank())
+
+ggsave("results/ak_waiting_times_2019_2020_count.png",p,bg="white")
+
+# AK: testing if within CI:
+waitingtimes_2019_2020_count_ci <- left_join(waitingtimes_2019_2020_count,
+                                             quantiles_by_group) %>% 
+  mutate(is_within_ci = ifelse(distribution < quantile_2.5 & distribution < quantile_97.5,
+                               1,
+                               0))
+
+head(waitingtimes_2019_2020_count_ci,10)
 
 # 3 Penalties
 #creating the null distribution line for the plot
