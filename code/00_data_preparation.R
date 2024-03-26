@@ -181,7 +181,6 @@ saveRDS(season20192020,"intermediate_data/season20192020.rds")
 
 #variable counting the number of games in the season
 game_count2019 <- n_distinct(season20192020$game_id)
-save(game_count2019, file = "intermediate_data/game_count2019")
 
 # Trial Analysis for the 2019-2020 season
 # Data frame that shows the number of games and penalties for players during the 2019-2020 season 
@@ -194,11 +193,11 @@ save(game_count2019, file = "intermediate_data/game_count2019")
 
 # attempt at using the method outlined in the paper, a probability distribution of the amount of games in between each penalty for players
  # isolating the players who had 2 penalties in the 2019-2020 season
-fixedwindow_20192020 <- filter(player_games20192020, penalty_count == 2)
-saveRDS(fixedwindow_20192020,"intermediate_data/fixedwindow_20192020.rds")
+fixedwindow2pen_20192020 <- filter(player_games20192020, penalty_count == 2)
+saveRDS(fixedwindow2pen_20192020,"intermediate_data/fixedwindow2pen_20192020.rds")
 
 # ranking the games where players had penalties through ranking the games that players played in in 2019-2020 season
-twopenalties20192020 <- filter(season20192020, player_id %in% fixedwindow_20192020$player_id)
+twopenalties20192020 <- filter(season20192020, player_id %in% fixedwindow2pen_20192020$player_id)
 twopenalties20192020 <- distinct(twopenalties20192020, play_id, .keep_all = TRUE)
 twopenalties20192020 <- twopenalties20192020 %>%
   group_by(player_id) %>%
@@ -208,14 +207,16 @@ twopenalties20192020 <- filter(twopenalties20192020, playerType == "PenaltyOn")
 saveRDS(twopenalties20192020,"intermediate_data/twopenalties20192020.rds")
 
 # data frame with waiting times between player's two penalties in 2019-2020 season- subtracts the rankings of games from each other
-waitingtimes20192020 <- twopenalties20192020 %>%
+twopenaltieswaitingtimes20192020 <- twopenalties20192020 %>%
   group_by(player_id) %>%
   summarise(game_difference = diff(game_order))
 
 #applying formula (9) from the paper to determine the distribution
-waitingtimes20192020$distribution <- (2*(game_count2019 - waitingtimes20192020$game_difference))/(game_count2019*(game_count2019 + 1))
-saveRDS(waitingtimes20192020,"intermediate_data/waitingtimes20192020.rds")
+# twopenaltieswaitingtimes20192020$distribution <- (2*(game_count2019 - twopenaltieswaitingtimes20192020$game_difference))/(game_count2019*(game_count2019 + 1))
+# saveRDS(twopenaltieswaitingtimes20192020,"intermediate_data/twopenaltieswaitingtimes20192020.rds")
 
+twopenaltieswaitingtimes20192020$distribution <- 1/nrow(twopenaltieswaitingtimes20192020)
+saveRDS(twopenaltieswaitingtimes20192020,"intermediate_data/twopenaltieswaitingtimes20192020.rds")
 
 #the same analysis, but now for 3 penalties. isolating the players who had 3 penalties in the 2019-2020 season
 fixedwindow3pen_20192020 <- filter(player_games20192020, penalty_count == 3)
@@ -238,13 +239,7 @@ threepenwaitingtimes20192020 <- threepenalties20192020 %>%
   summarise(game_difference = diff(game_order))
 
 #applying formula (10) from the paper to determine the distribution
-threepenwaitingtimes20192020$distribution <- mapply(
-  function(game_diff) {
-    numerator <- prod((game_count2019 - game_diff + 0:1) / (game_count2019 + 0:1))
-    return(3 / (game_count2019 + 2) * numerator)
-  },
-  threepenwaitingtimes20192020$game_difference
-)
+threepenwaitingtimes20192020$distribution <- 1/nrow(threepenwaitingtimes20192020)
 saveRDS(threepenwaitingtimes20192020,"intermediate_data/threepenwaitingtimes20192020.rds")
 
 
@@ -269,13 +264,7 @@ fourpenwaitingtimes20192020 <- fourpenalties20192020 %>%
   summarise(game_difference = diff(game_order))
 
 #applying formula (10) from the paper to determine the distribution
-fourpenwaitingtimes20192020$distribution <- mapply(
-  function(game_diff) {
-    numerator <- prod((game_count2019 - game_diff + 0:2) / (game_count2019 + 0:2))
-    return(4 / (game_count2019 + 3) * numerator)
-  },
-  fourpenwaitingtimes20192020$game_difference
-)
+fourpenwaitingtimes20192020$distribution <- 1/nrow(fourpenwaitingtimes20192020)
 saveRDS(fourpenwaitingtimes20192020,"intermediate_data/fourpenwaitingtimes20192020.rds")
 
 #CREATING DATAFRAMES FOR THE SAME ANALYSIS, BUT WITH MAJOR PENALTIES
@@ -305,8 +294,7 @@ twomajor_waitingtimes20192020 <- two_majors20192020 %>%
   group_by(player_id) %>%
   summarise(game_difference = diff(game_order))
 
-#applying formula (9) from the paper to determine the distribution
-twomajor_waitingtimes20192020$distribution <- (2*(game_count2019 - twomajor_waitingtimes20192020$game_difference))/(game_count2019*(game_count2019 + 1))
+twomajor_waitingtimes20192020$distribution <- 1/nrow(twomajor_waitingtimes20192020)
 saveRDS(twomajor_waitingtimes20192020,"intermediate_data/twomajor_waitingtimes20192020.rds")
 
 
@@ -330,14 +318,7 @@ threemajor_waitingtimes20192020 <- three_majors20192020 %>%
   group_by(player_id) %>%
   summarise(game_difference = diff(game_order))
 
-#applying formula (10) from the paper to determine the distribution
-threemajor_waitingtimes20192020$distribution <- mapply(
-  function(game_diff) {
-    numerator <- prod((game_count2019 - game_diff + 0:1) / (game_count2019 + 0:1))
-    return(3 / (game_count2019 + 2) * numerator)
-  },
-  threemajor_waitingtimes20192020$game_difference
-)
+threemajor_waitingtimes20192020$distribution <- 1/nrow(threemajor_waitingtimes20192020)
 saveRDS(threemajor_waitingtimes20192020,"intermediate_data/threemajor_waitingtimes20192020.rds")
 
 
@@ -362,13 +343,7 @@ fourmajor_waitingtimes20192020 <- four_majors20192020 %>%
   summarise(game_difference = diff(game_order))
 
 #applying formula (10) from the paper to determine the distribution
-fourmajor_waitingtimes20192020$distribution <- mapply(
-  function(game_diff) {
-    numerator <- prod((game_count2019 - game_diff + 0:2) / (game_count2019 + 0:2))
-    return(4 / (game_count2019 + 3) * numerator)
-  },
-  fourmajor_waitingtimes20192020$game_difference
-)
+fourmajor_waitingtimes20192020$distribution <- 1/nrow(fourmajor_waitingtimes20192020)
 saveRDS(fourmajor_waitingtimes20192020,"intermediate_data/fourmajor_waitingtimes20192020.rds")
 
 # # probability distribution of waiting times

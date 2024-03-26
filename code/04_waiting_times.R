@@ -2,39 +2,40 @@ library(tidyverse)
 library(patchwork)
 
 season20192020 <- readRDS("intermediate_data/season20192020.rds")
-waitingtimes20192020 <- readRDS("intermediate_data/waitingtimes20192020.rds")
+twopenaltieswaitingtimes20192020 <- readRDS("intermediate_data/twopenaltieswaitingtimes20192020.rds")
 game_count2019 <- n_distinct(season20192020$game_id)
 penaltygames20192020 <- readRDS("intermediate_data/penaltygames20192020.rds")
-fixedwindow_20192020 <- readRDS("intermediate_data/fixedwindow_20192020.rds")
+fixedwindow2pen_20192020 <- readRDS("intermediate_data/fixedwindow2pen_20192020.rds")
 fixedwindow3pen_20192020 <- readRDS("intermediate_data/fixedwindow3pen_20192020.rds") 
 fixedwindow4pen_20192020 <- readRDS("intermediate_data/fixedwindow4pen_20192020.rds")
 fourpenwaitingtimes20192020 <- readRDS("intermediate_data/fourpenwaitingtimes20192020.rds")
 threepenwaitingtimes20192020 <- readRDS("intermediate_data/threepenwaitingtimes20192020.rds")
 
 #creating the null distribution line for the plot
-nulldist <- data.frame(c(0:31))
-names(nulldist)[names(nulldist) == "c.0.31."] <- "x"
-nulldist$y <- (2 * (game_count2019 - nulldist$x)) / (game_count2019 * (game_count2019 + 1))
+nulldist2 <- data.frame(c(0:31))
+names(nulldist2)[names(nulldist2) == "c.0.31."] <- "x"
+nulldist2$y <- (2 * (game_count2019 - nulldist2$x)) / (game_count2019 * (game_count2019 + 1))
 
 #graph of time between penalties vs. probability
-waitingtimes20192020plot <- ggplot() +
-  geom_histogram(data = waitingtimes20192020, aes(x = game_difference,
-                                                  y = distribution), stat = "identity", fill = "black", alpha = 1.0, width = 2) +
-  geom_line(data = nulldist, aes(x = x, y = y)) +
+waitingtimes201920202penplot <- ggplot() +
+  geom_histogram(data = twopenaltieswaitingtimes20192020, aes(x = game_difference,
+                                                  y = distribution), stat = "identity", fill = "gray", alpha = 1.0, width = 1) +
+  geom_line(data = nulldist2, aes(x = x, y = y)) +
   labs(x = "\u03C4 (Games)", y = "p(\u03C4)")
 
-waitingtimes20192020plot
 
-ggsave("results/2019twopenaltiesdistribution.png",waitingtimes20192020plot)
+waitingtimes201920202penplot
 
-#a list for storing the randomly generated waiting times
+ggsave("results/2019twopenaltiesdistribution.png",waitingtimes201920202penplot)
+
+#a list for storing the randomly generated waiting times in the loop
 waitingtimes_list <- list()
 
 #loop picking random games out of the games they played each season to have a penalty in. Used based on the game count and picks 2 random games based on order and stores them in the list. 
 for (i in 1:1000) {
-  randompenalties <- data.frame(Player = fixedwindow_20192020$player_id, first_penalty = NA, second_penalty = NA)
+  randompenalties <- data.frame(Player = fixedwindow2pen_20192020$player_id, first_penalty = NA, second_penalty = NA)
   for (player in 1:nrow(randompenalties)) {
-    game_count <- fixedwindow_20192020$game_count[player]
+    game_count <- fixedwindow2pen_20192020$game_count[player]
     randomgames <- sample(1:game_count, 2, replace = TRUE)
     randompenalties$first_penalty[player] <- randomgames[1]
     randompenalties$second_penalty[player] <- randomgames[2]
@@ -42,7 +43,7 @@ for (i in 1:1000) {
   waitingtimes <- randompenalties %>%
   group_by(Player) %>%
   summarise(game_difference = abs(first_penalty - second_penalty))
-  waitingtimes$distribution <- (2*(game_count2019 - waitingtimes$game_difference))/(game_count2019*(game_count2019 + 1))
+  waitingtimes$distribution <- 1/nrow(waitingtimes)
   
   waitingtimes <- waitingtimes %>%
     group_by(game_difference) %>%
@@ -61,12 +62,12 @@ quantiles_by_group <- all_waitingtimes %>%
             quantile_97.5 = quantile(cumDist, 0.975))
 
 #graph that includes the observed distributions and the 2.5 percentile and 97.5 percentile of the random distributions
-everything2pen <- waitingtimes20192020plot +
+everything2pen <- waitingtimes201920202penplot +
   geom_histogram(data = quantiles_by_group, aes(x = game_difference, y = quantile_2.5), stat = "identity", fill = "red", alpha = 0.5) +
   geom_histogram(data = quantiles_by_group, aes(x = game_difference, y = quantile_97.5), stat = "identity", fill = "blue", alpha = 0.5) 
 
 # AK: rework histogram
-waitingtimes_2019_2020_count <- waitingtimes20192020 %>% 
+waitingtimes_2019_2020_count <- twopenaltieswaitingtimes20192020 %>% 
   #mutate(distr_binned = cut(distribution,
   #                          breaks = unique(quantile(distribution, probs = seq.int(0,1, by = 1 / max(game_difference)))), 
   #                          include.lowest = TRUE)) %>% 
@@ -76,7 +77,7 @@ waitingtimes_2019_2020_count <- waitingtimes20192020 %>%
   arrange(game_difference) %>% 
   tidyr::complete(game_difference = min(game_difference):max(game_difference)) %>% 
   mutate(n = ifelse(is.na(n),0,n)) %>% 
-  left_join(., nulldist, by = c("game_difference" = "x")) %>% 
+  left_join(., nulldist2, by = c("game_difference" = "x")) %>% 
   rename(distribution = y)
   
 
@@ -88,7 +89,7 @@ p <- ggplot(data = waitingtimes_2019_2020_count,
   geom_line() +
   scale_y_continuous(limits = c(0,NA)) +
   scale_x_continuous(breaks = 1:31) +
-  labs(x = "Game difference", y = "Count of games")+
+  labs(x = "Game difference", y = "Count of players")+
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
