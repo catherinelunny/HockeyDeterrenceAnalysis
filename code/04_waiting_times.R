@@ -14,12 +14,18 @@ threepenwaitingtimes20192020 <- readRDS("intermediate_data/threepenwaitingtimes2
 #creating the null distribution line for the plot
 nulldist2 <- data.frame(c(0:31))
 names(nulldist2)[names(nulldist2) == "c.0.31."] <- "x"
+
+# based on equation 9 from the burglary paper. expected distribution of order 2 games based on the number of games in the season.
+# distribution is based on the number of games in the season that has at least as many games as the given waiting time after it.
 nulldist2$y <- (2 * (game_count2019 - nulldist2$x)) / (game_count2019 * (game_count2019 + 1))
+
+# Expected count of penalties for each game difference
+nulldist2$n <- (nulldist2$y*(game_count2019 * (game_count2019 + 1)))/2
 
 #graph of time between penalties vs. probability
 waitingtimes201920202penplot <- ggplot() +
   geom_histogram(data = twopenaltieswaitingtimes20192020, aes(x = game_difference,
-                                                  y = distribution), stat = "identity", fill = "gray", alpha = 1.0, width = 1) +
+                                                  y = distribution), stat = "identity", fill = "gray", alpha = 1.0, width = 0.4) +
   geom_line(data = nulldist2, aes(x = x, y = y)) +
   labs(x = "\u03C4 (Games)", y = "p(\u03C4)")
 
@@ -79,10 +85,10 @@ waitingtimes_2019_2020_count <- twopenaltieswaitingtimes20192020 %>%
   mutate(n = ifelse(is.na(n),0,n)) %>% 
   left_join(., nulldist2, by = c("game_difference" = "x")) %>% 
   rename(distribution = y)
-  
+
 
 p <- ggplot(data = waitingtimes_2019_2020_count,
-       aes(x = game_difference,
+            aes(x = game_difference,
                                         y = n,
                                         group = 1)) +
   geom_point() +
@@ -94,6 +100,31 @@ p <- ggplot(data = waitingtimes_2019_2020_count,
   theme(panel.grid.minor = element_blank())
 
 ggsave("results/ak_waiting_times_2019_2020_count.png",p,bg="white")
+
+# CL- adding expected counts to graph
+g <- ggplot(data = waitingtimes_2019_2020_count,
+       aes(x = game_difference,
+                                        y = n,
+                                        group = 1)) +
+  geom_point() +
+  geom_line() +
+  scale_y_continuous(limits = c(0,NA)) +
+  scale_x_continuous(breaks = 1:31) +
+  geom_point(data = nulldist2,
+             aes(x = x,
+                 y = n,
+                 group = 1)) +
+  geom_line(data = nulldist2,
+            aes(x = x,
+                y = n,
+                group = 1)) +
+  scale_y_continuous(limits = c(0,NA)) +
+  scale_x_continuous(breaks = 1:31) +
+  labs(x = "Game difference", y = "Count of players")+
+  theme_minimal() +
+  theme(panel.grid.minor = element_blank())
+
+ggsave("results/cl_waiting_times_2019_2020_count.png",g,bg="white")
 
 # AK: testing if within CI:
 waitingtimes_2019_2020_count_ci <- left_join(waitingtimes_2019_2020_count,
