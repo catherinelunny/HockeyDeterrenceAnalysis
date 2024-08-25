@@ -1,105 +1,50 @@
 library(tidyverse)
+library(ggplot2)
 library(patchwork)
 
-#2019-2020
-#players with 2 penalties
-waitingtimes2pen2019 <- waiting_times(2019, 2)
+player_penalties <- read.csv("data/plays_players.csv")
+penalties <- read.csv("data/game_penalties.csv")
+players <- read.csv("data/player_info.csv")
+plays_players1 <- readRDS("data/plays_players1.rds")
+games <- read.csv("data/games.csv")
 
-most_games <- max(waitingtimes2pen2019$game_count)
+filtered_penalties <- readRDS("intermediate_data/filtered_penalties.rds")
+games_ordered <- readRDS("data/games_ordered.rds")
+complete_penalty_info <- readRDS("intermediate_data/complete_penalty_info.rds")
+all_player_plays <- readRDS("intermediate_data/all_player_plays.rds")
+careers <- readRDS("intermediate_data/careers.rds")
+career_data <- readRDS("intermediate_data/career_data.rds")
+mean_share_table <- readRDS("intermediate_data/mean_share_table.rds")
+player_games <- readRDS("intermediate_data/player_games.rds")
+tab_games_by_players <- readRDS("intermediate_data/tab_games_by_players.rds")
+tab_seasons_by_players <- readRDS("intermediate_data/tab_seasons_by_players.rds")
+normalized_player_data <- readRDS("intermediate_data/normalized_player_data.rds")
+averages <- readRDS("intermediate_data/averages.rds")
+player_game_count <- readRDS("intermediate_data/player_game_count.rds")
 
-# dataframe counting the observed counts of each observed waiting time
-counts_obs <- waitingtimes2pen2019 %>%
-  group_by(diff_time) %>%
-  summarize(obs_count = n())
+waiting_times <- load("~/HockeyDeterrenceAnalysis/intermediate_data/waiting_times.RData")
+most_common_num_pens <- load("~/HockeyDeterrenceAnalysis/intermediate_data/most_common_num_pens.RData")
+fixednumber_penalties_season <- load("~/HockeyDeterrenceAnalysis/intermediate_data/fixednumber_penalties_season.RData")
+season_plays <- load("~/HockeyDeterrenceAnalysis/intermediate_data/season_plays.RData")
+game_count_season <- load("~/HockeyDeterrenceAnalysis/intermediate_data/game_count_season.RData")
+player_games_season <- load("~/HockeyDeterrenceAnalysis/intermediate_data/player_games_season.RData")
 
-# main dataframe that will have all possible waiting times and counts
-waitingtimes <- data.frame(diff_time = 0:most_games)
-waitingtimes <- merge(waitingtimes, counts_obs, by = "diff_time", all.x = TRUE)
-for (diff in 1:nrow(waitingtimes)) {
-  if (is.na(waitingtimes$obs_count[diff])) {
-    waitingtimes$obs_count[diff] <- 0
-  } 
-}
-
-
-#loop picking random games out of the games they played each season to have a penalty in 
-for (i in 1:1000) {
-  randompenalties <- data.frame(Player = waitingtimes2pen2019$player_id, first_penalty = NA, second_penalty = NA)
-  for (player in 1:nrow(randompenalties)) {
-    num_games <- waitingtimes2pen2019$game_count[player]
-    randomgames <- sample(1:num_games, 2, replace = TRUE)
-    randompenalties$first_penalty[player] <- randomgames[1]
-    randompenalties$second_penalty[player] <- randomgames[2]
-  }
-  game_diffs <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = abs(first_penalty - second_penalty))
-  
-  game_counts <- game_diffs %>%
-    group_by(diff_time) %>%
-    summarize(count = n())
-  
-  counts <- data.frame(diff_time = 0:most_games)
-  counts <- merge(counts, game_counts, by = "diff_time", all.x = TRUE)
-  for (diff in 1:nrow(waitingtimes)) {
-    if (is.na(counts$count[diff])) {
-      counts$count[diff] <- 0
-    }
-  }
-  colname <- paste0("count_simulation_", i)
-  waitingtimes[[colname]] <- counts$count
-}
-
-# loop for getting the upper and lower bounds
-quantile_list <- list()
-
-# pulling the values from each row (which are the counts for each waiting time from each iteration)
-for (i in 1:nrow(waitingtimes)) {
-  values <- as.numeric(waitingtimes[i, 3:1002])
-  quantiles <- quantile(values, probs = c(0.025, 0.975))
-  quantile_list[[i]] <- quantiles
-}
-
-quantiles_df <- do.call(rbind, quantile_list)
-# making a data frame with all of the simulation values and quantiles
-waitingtimes_quantiles <- cbind(waitingtimes, quantiles_df)
-
-waitingtimes_quantiles <- waitingtimes_quantiles %>%
-  rename(lower_bound = "2.5%",
-         upper_bound = "97.5%")
-
-p <- ggplot(data = waitingtimes_quantiles) + 
-  geom_point(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_line(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_point(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_point(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
-  scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
-  labs(x = "Game difference", y = "Count of players")+
-  theme_minimal() +
-  theme(panel.grid.minor = element_blank())
-
-p
-
-ggsave("results/waitingtimes2pen20192020.png",p,bg="white")
 
 #2019-2020
-#players with 3 penalties
+#waiting times for the top 3 most frequent amount of penalties for players to have
+waitingtimes20192020 <- waiting_times(2019)
+waitingtimes20192020_1 <- as.data.frame(waitingtimes20192020[1])
 
-waitingtimes3pen2019 <- waiting_times(2019, 3)
-
-most_games <- max(waitingtimes3pen2019$game_count)
+most_games <- max(waitingtimes20192020_1$game_count)
 
 # dataframe counting the observed counts of each observed waiting time
-counts_obs <- waitingtimes3pen2019 %>%
-  group_by(diff_time) %>%
+counts_obs <- waitingtimes20192020_1 %>%
+  group_by(game_diff) %>%
   summarize(obs_count = n())
 
 # main dataframe that will have all possible waiting times and counts
-waitingtimes <- data.frame(diff_time = 0:most_games)
-waitingtimes <- merge(waitingtimes, counts_obs, by = "diff_time", all.x = TRUE)
+waitingtimes <- data.frame(game_diff = 0:most_games)
+waitingtimes <- merge(waitingtimes, counts_obs, by = "game_diff", all.x = TRUE)
 for (diff in 1:nrow(waitingtimes)) {
   if (is.na(waitingtimes$obs_count[diff])) {
     waitingtimes$obs_count[diff] <- 0
@@ -108,33 +53,42 @@ for (diff in 1:nrow(waitingtimes)) {
 
 
 #loop picking random games out of the games they played each season to have a penalty in 
-for (i in 1:1000) {
-  randompenalties <- data.frame(Player = waitingtimes3pen2019$player_id, first_penalty = NA, second_penalty = NA, third_penalty = NA)
-  for (player in 1:nrow(randompenalties)) {
-    num_games <- waitingtimes3pen2019$game_count[player]
-    randomgames <- sample(1:num_games, 3, replace = TRUE)
-    randompenalties$first_penalty[player] <- randomgames[1]
-    randompenalties$second_penalty[player] <- randomgames[2]
-    randompenalties$third_penalty[player] <- randomgames[3]
+randomwaitingtimes_list <- list()
+for (i in 1:100) {
+  randomwaitingtimes1_list <- list()
+  for (p in 1:n_distinct(waitingtimes20192020_1$player_id)) {
+    for (player in waitingtimes20192020_1$player_id) {
+      num_games <- waitingtimes20192020_1$game_count[waitingtimes20192020_1$player_id == player]
+      num_penalties <- sum(waitingtimes20192020_1$player_id == player) + 1
+      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+      randomgames_ordered <- sort(randomgames)
+      player_diffs <- filter(waitingtimes20192020_1, player_id == player)
+      
+      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
+      for (game in 1:(num_penalties - 1)){
+        penalty_game <- randomgames_ordered[game]
+        randomwaitingtimes$penalty_game[game] <- penalty_game
+        
+        next_penalty_game <- randomgames_ordered[game + 1]
+        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+        
+        game_diff <- abs(next_penalty_game - penalty_game)
+        randomwaitingtimes$game_diff[game] <- game_diff
+      }
+    }
+    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
   }
   
-  game_diffs1 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = second_penalty - first_penalty,
-              .groups = 'drop')
-
-  game_diffs2 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = third_penalty - second_penalty,
-              .groups = 'drop')
-  game_diffs <- rbind(game_diffs1, game_diffs2)
+  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
   
-  game_counts <- game_diffs %>%
-    group_by(diff_time) %>%
+  
+  game_counts <- randomwaitingtimes_list[[i]] %>%
+    group_by(game_diff) %>%
     summarize(count = n())
   
-  counts <- data.frame(diff_time = 0:most_games)
-  counts <- merge(counts, game_counts, by = "diff_time", all.x = TRUE)
+  counts <- data.frame(game_diff = 0:most_games)
+  counts <- merge(counts, game_counts, by = "game_diff", all.x = TRUE)
   for (diff in 1:nrow(waitingtimes)) {
     if (is.na(counts$count[diff])) {
       counts$count[diff] <- 0
@@ -149,51 +103,52 @@ quantile_list <- list()
 
 # pulling the values from each row (which are the counts for each waiting time from each iteration)
 for (i in 1:nrow(waitingtimes)) {
-  values <- as.numeric(waitingtimes[i, 3:1002])
+  values <- as.numeric(waitingtimes[i, 3:102])
   quantiles <- quantile(values, probs = c(0.025, 0.975))
   quantile_list[[i]] <- quantiles
 }
 
 quantiles_df <- do.call(rbind, quantile_list)
 # making a data frame with all of the simulation values and quantiles
-waitingtimes_quantiles <- cbind(waitingtimes, quantiles_df)
+obswaitingtimes <- waitingtimes[, c("game_diff", "obs_count")]
+waitingtimes_quantiles <- cbind(obswaitingtimes, quantiles_df)
 
 waitingtimes_quantiles <- waitingtimes_quantiles %>%
   rename(lower_bound = "2.5%",
          upper_bound = "97.5%")
 
 p <- ggplot(data = waitingtimes_quantiles) + 
-  geom_point(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_line(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_point(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_point(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  geom_point(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_line(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_point(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  scale_y_continuous(breaks = (0:100)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
-  labs(x = "Game difference", y = "Count of players")+
+  labs(title = paste0("Waiting Times of Players with ", num_penalties, " Penalties in the 2019-2020 Season"), x = "Game difference", y = "Count of players")+
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
 p
 
-ggsave("results/waitingtimes3pen20192020.png",p,bg="white")
+ggsave("results/waitingtimes20192020_1.png",p,bg="white")
 
 #2019-2020
-#players with 3 penalties
+#waiting times for players with the second most common penalty amount
 
-waitingtimes4pen2019 <- waiting_times(2019, 4)
+waitingtimes20192020_2 <- as.data.frame(waitingtimes20192020[2])
 
-most_games <- max(waitingtimes4pen2019$game_count)
+most_games <- max(waitingtimes20192020_2$game_count)
 
 # dataframe counting the observed counts of each observed waiting time
-counts_obs <- waitingtimes4pen2019 %>%
-  group_by(diff_time) %>%
+counts_obs <- waitingtimes20192020_2 %>%
+  group_by(game_diff) %>%
   summarize(obs_count = n())
 
 # main dataframe that will have all possible waiting times and counts
-waitingtimes <- data.frame(diff_time = 0:most_games)
-waitingtimes <- merge(waitingtimes, counts_obs, by = "diff_time", all.x = TRUE)
+waitingtimes <- data.frame(game_diff = 0:most_games)
+waitingtimes <- merge(waitingtimes, counts_obs, by = "game_diff", all.x = TRUE)
 for (diff in 1:nrow(waitingtimes)) {
   if (is.na(waitingtimes$obs_count[diff])) {
     waitingtimes$obs_count[diff] <- 0
@@ -202,39 +157,42 @@ for (diff in 1:nrow(waitingtimes)) {
 
 
 #loop picking random games out of the games they played each season to have a penalty in 
-for (i in 1:1000) {
-  randompenalties <- data.frame(Player = waitingtimes4pen2019$player_id, first_penalty = NA, second_penalty = NA, third_penalty = NA, fourth_penalty = NA)
-  for (player in 1:nrow(randompenalties)) {
-    num_games <- waitingtimes4pen2019$game_count[player]
-    randomgames <- sample(1:num_games, 4, replace = TRUE)
-    randompenalties$first_penalty[player] <- randomgames[1]
-    randompenalties$second_penalty[player] <- randomgames[2]
-    randompenalties$third_penalty[player] <- randomgames[3]
-    randompenalties$fourth_penalty[player] <- randomgames[4]
+randomwaitingtimes_list <- list()
+for (i in 1:100) {
+  randomwaitingtimes1_list <- list()
+  for (p in 1:n_distinct(waitingtimes20192020_2$player_id)) {
+    for (player in waitingtimes20192020_2$player_id) {
+      num_games <- waitingtimes20192020_2$game_count[waitingtimes20192020_2$player_id == player]
+      num_penalties <- sum(waitingtimes20192020_2$player_id == player) + 1
+      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+      randomgames_ordered <- sort(randomgames)
+      player_diffs <- filter(waitingtimes20192020_2, player_id == player)
+      
+      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
+      for (game in 1:(num_penalties - 1)){
+        penalty_game <- randomgames_ordered[game]
+        randomwaitingtimes$penalty_game[game] <- penalty_game
+        
+        next_penalty_game <- randomgames_ordered[game + 1]
+        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+        
+        game_diff <- abs(next_penalty_game - penalty_game)
+        randomwaitingtimes$game_diff[game] <- game_diff
+      }
+    }
+    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
   }
   
-  game_diffs1 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = second_penalty - first_penalty,
-              .groups = 'drop')
+  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
   
-  game_diffs2 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = third_penalty - second_penalty,
-              .groups = 'drop')
   
-  game_diffs3 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = fourth_penalty - third_penalty,
-              .groups = 'drop')
-  game_diffs <- rbind(game_diffs1, game_diffs2, game_diffs3)
-  
-  game_counts <- game_diffs %>%
-    group_by(diff_time) %>%
+  game_counts <- randomwaitingtimes_list[[i]] %>%
+    group_by(game_diff) %>%
     summarize(count = n())
   
-  counts <- data.frame(diff_time = 0:most_games)
-  counts <- merge(counts, game_counts, by = "diff_time", all.x = TRUE)
+  counts <- data.frame(game_diff = 0:most_games)
+  counts <- merge(counts, game_counts, by = "game_diff", all.x = TRUE)
   for (diff in 1:nrow(waitingtimes)) {
     if (is.na(counts$count[diff])) {
       counts$count[diff] <- 0
@@ -249,51 +207,158 @@ quantile_list <- list()
 
 # pulling the values from each row (which are the counts for each waiting time from each iteration)
 for (i in 1:nrow(waitingtimes)) {
-  values <- as.numeric(waitingtimes[i, 3:1002])
+  values <- as.numeric(waitingtimes[i, 3:102])
   quantiles <- quantile(values, probs = c(0.025, 0.975))
   quantile_list[[i]] <- quantiles
 }
 
 quantiles_df <- do.call(rbind, quantile_list)
 # making a data frame with all of the simulation values and quantiles
-waitingtimes_quantiles <- cbind(waitingtimes, quantiles_df)
+obswaitingtimes <- waitingtimes[, c("game_diff", "obs_count")]
+waitingtimes_quantiles <- cbind(obswaitingtimes, quantiles_df)
 
 waitingtimes_quantiles <- waitingtimes_quantiles %>%
   rename(lower_bound = "2.5%",
          upper_bound = "97.5%")
 
 p <- ggplot(data = waitingtimes_quantiles) + 
-  geom_point(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_line(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_point(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_point(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  geom_point(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_line(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_point(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  scale_y_continuous(breaks = (0:100)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
-  labs(x = "Game difference", y = "Count of players")+
+  labs(title = paste0("Waiting Times of Players with ", num_penalties, " Penalties in the 2019-2020 Season"), x = "Difference in Game Order for Player's Consecutive Penalties", y = "Count of players")+
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
 p
 
-ggsave("results/waitingtimes4pen20192020.png",p,bg="white")
+ggsave("results/waitingtimes20192020_2.png",p,bg="white")
+
+#2019-2020
+#waiting times for players with the third most common penalty amount
+
+waitingtimes20192020_3 <- as.data.frame(waitingtimes20192020[3])
+
+most_games <- max(waitingtimes20192020_3$game_count)
+
+# dataframe counting the observed counts of each observed waiting time
+counts_obs <- waitingtimes20192020_3 %>%
+  group_by(game_diff) %>%
+  summarize(obs_count = n())
+
+# main dataframe that will have all possible waiting times and counts
+waitingtimes <- data.frame(game_diff = 0:most_games)
+waitingtimes <- merge(waitingtimes, counts_obs, by = "game_diff", all.x = TRUE)
+for (diff in 1:nrow(waitingtimes)) {
+  if (is.na(waitingtimes$obs_count[diff])) {
+    waitingtimes$obs_count[diff] <- 0
+  } 
+}
+
+
+#loop picking random games out of the games they played each season to have a penalty in 
+randomwaitingtimes_list <- list()
+for (i in 1:100) {
+  randomwaitingtimes1_list <- list()
+  for (p in 1:n_distinct(waitingtimes20192020_3$player_id)) {
+    for (player in waitingtimes20192020_3$player_id) {
+      num_games <- waitingtimes20192020_3$game_count[waitingtimes20192020_3$player_id == player]
+      num_penalties <- sum(waitingtimes20192020_3$player_id == player) + 1
+      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+      randomgames_ordered <- sort(randomgames)
+      player_diffs <- filter(waitingtimes20192020_3, player_id == player)
+      
+      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
+      for (game in 1:(num_penalties - 1)){
+        penalty_game <- randomgames_ordered[game]
+        randomwaitingtimes$penalty_game[game] <- penalty_game
+        
+        next_penalty_game <- randomgames_ordered[game + 1]
+        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+        
+        game_diff <- abs(next_penalty_game - penalty_game)
+        randomwaitingtimes$game_diff[game] <- game_diff
+      }
+    }
+    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
+  }
+  
+  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
+  
+  
+  game_counts <- randomwaitingtimes_list[[i]] %>%
+    group_by(game_diff) %>%
+    summarize(count = n())
+  
+  counts <- data.frame(game_diff = 0:most_games)
+  counts <- merge(counts, game_counts, by = "game_diff", all.x = TRUE)
+  for (diff in 1:nrow(waitingtimes)) {
+    if (is.na(counts$count[diff])) {
+      counts$count[diff] <- 0
+    }
+  }
+  colname <- paste0("count_simulation_", i)
+  waitingtimes[[colname]] <- counts$count
+}
+
+# loop for getting the upper and lower bounds
+quantile_list <- list()
+
+# pulling the values from each row (which are the counts for each waiting time from each iteration)
+for (i in 1:nrow(waitingtimes)) {
+  values <- as.numeric(waitingtimes[i, 3:102])
+  quantiles <- quantile(values, probs = c(0.025, 0.975))
+  quantile_list[[i]] <- quantiles
+}
+
+quantiles_df <- do.call(rbind, quantile_list)
+# making a data frame with all of the simulation values and quantiles
+obswaitingtimes <- waitingtimes[, c("game_diff", "obs_count")]
+waitingtimes_quantiles <- cbind(obswaitingtimes, quantiles_df)
+
+waitingtimes_quantiles <- waitingtimes_quantiles %>%
+  rename(lower_bound = "2.5%",
+         upper_bound = "97.5%")
+
+p <- ggplot(data = waitingtimes_quantiles) + 
+  geom_point(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_line(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_point(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  scale_y_continuous(breaks = (0:100)) +
+  scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
+  labs(title = paste0("Waiting Times of Players with ", num_penalties, " Penalties in the 2019-2020 Season"), x = "Difference in Game Order for Player's Consecutive Penalties", y = "Count of players")+
+  theme_minimal() +
+  theme(panel.grid.minor = element_blank())
+
+p
+
+ggsave("results/waitingtimes20192020_3.png",p,bg="white")
+
 
 #2018-2019
-#players with 2 penalties
+#waiting times for players with the most common penalty amount
 
-waitingtimes2pen2018 <- waiting_times(2018, 2)
+waitingtimes20182019 <- waiting_times(2018)
+waitingtimes20182019_1 <- as.data.frame(waitingtimes20182019[1])
 
-most_games <- max(waitingtimes2pen2018$game_count)
+most_games <- max(waitingtimes20182019_1$game_count)
 
 # dataframe counting the observed counts of each observed waiting time
-counts_obs <- waitingtimes2pen2018 %>%
-  group_by(diff_time) %>%
+counts_obs <- waitingtimes20182019_1 %>%
+  group_by(game_diff) %>%
   summarize(obs_count = n())
 
 # main dataframe that will have all possible waiting times and counts
-waitingtimes <- data.frame(diff_time = 0:most_games)
-waitingtimes <- merge(waitingtimes, counts_obs, by = "diff_time", all.x = TRUE)
+waitingtimes <- data.frame(game_diff = 0:most_games)
+waitingtimes <- merge(waitingtimes, counts_obs, by = "game_diff", all.x = TRUE)
 for (diff in 1:nrow(waitingtimes)) {
   if (is.na(waitingtimes$obs_count[diff])) {
     waitingtimes$obs_count[diff] <- 0
@@ -302,24 +367,42 @@ for (diff in 1:nrow(waitingtimes)) {
 
 
 #loop picking random games out of the games they played each season to have a penalty in 
-for (i in 1:1000) {
-  randompenalties <- data.frame(Player = waitingtimes2pen2018$player_id, first_penalty = NA, second_penalty = NA)
-  for (player in 1:nrow(randompenalties)) {
-    num_games <- waitingtimes2pen2018$game_count[player]
-    randomgames <- sample(1:num_games, 2, replace = TRUE)
-    randompenalties$first_penalty[player] <- randomgames[1]
-    randompenalties$second_penalty[player] <- randomgames[2]
+randomwaitingtimes_list <- list()
+for (i in 1:100) {
+  randomwaitingtimes1_list <- list()
+  for (p in 1:n_distinct(waitingtimes20182019_1$player_id)) {
+    for (player in waitingtimes20182019_1$player_id) {
+      num_games <- waitingtimes20182019_1$game_count[waitingtimes20182019_1$player_id == player]
+      num_penalties <- sum(waitingtimes20182019_1$player_id == player) + 1
+      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+      randomgames_ordered <- sort(randomgames)
+      player_diffs <- filter(waitingtimes20182019_1, player_id == player)
+      
+      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
+      for (game in 1:(num_penalties - 1)){
+        penalty_game <- randomgames_ordered[game]
+        randomwaitingtimes$penalty_game[game] <- penalty_game
+        
+        next_penalty_game <- randomgames_ordered[game + 1]
+        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+        
+        game_diff <- abs(next_penalty_game - penalty_game)
+        randomwaitingtimes$game_diff[game] <- game_diff
+      }
+    }
+    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
   }
-  game_diffs <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = abs(first_penalty - second_penalty))
   
-  game_counts <- game_diffs %>%
-    group_by(diff_time) %>%
+  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
+  
+  
+  game_counts <- randomwaitingtimes_list[[i]] %>%
+    group_by(game_diff) %>%
     summarize(count = n())
   
-  counts <- data.frame(diff_time = 0:most_games)
-  counts <- merge(counts, game_counts, by = "diff_time", all.x = TRUE)
+  counts <- data.frame(game_diff = 0:most_games)
+  counts <- merge(counts, game_counts, by = "game_diff", all.x = TRUE)
   for (diff in 1:nrow(waitingtimes)) {
     if (is.na(counts$count[diff])) {
       counts$count[diff] <- 0
@@ -334,51 +417,52 @@ quantile_list <- list()
 
 # pulling the values from each row (which are the counts for each waiting time from each iteration)
 for (i in 1:nrow(waitingtimes)) {
-  values <- as.numeric(waitingtimes[i, 3:1002])
+  values <- as.numeric(waitingtimes[i, 3:102])
   quantiles <- quantile(values, probs = c(0.025, 0.975))
   quantile_list[[i]] <- quantiles
 }
 
 quantiles_df <- do.call(rbind, quantile_list)
 # making a data frame with all of the simulation values and quantiles
-waitingtimes_quantiles <- cbind(waitingtimes, quantiles_df)
+obswaitingtimes <- waitingtimes[, c("game_diff", "obs_count")]
+waitingtimes_quantiles <- cbind(obswaitingtimes, quantiles_df)
 
 waitingtimes_quantiles <- waitingtimes_quantiles %>%
   rename(lower_bound = "2.5%",
          upper_bound = "97.5%")
 
 p <- ggplot(data = waitingtimes_quantiles) + 
-  geom_point(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_line(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_point(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_point(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  geom_point(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_line(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_point(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  scale_y_continuous(breaks = (0:100)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
-  labs(x = "Game difference", y = "Count of players")+
+  labs(title = paste0("Waiting Times of Players with ", num_penalties, " Penalties in the 2018-2019 Season"), x = "Difference in Game Order for Player's Consecutive Penalties", y = "Count of players")+
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
 p
 
-ggsave("results/waitingtimes2pen20182019.png",p,bg="white")
+ggsave("results/waitingtimes20182019_1.png",p,bg="white")
 
 #2018-2019
-#players with 3 penalties
+#waiting times for players with the second most common penalty amount
 
-waitingtimes3pen2018 <- waiting_times(2018, 3)
+waitingtimes20182019_2 <- as.data.frame(waitingtimes20182019[2])
 
-most_games <- max(waitingtimes3pen2018$game_count)
+most_games <- max(waitingtimes20182019_2$game_count)
 
 # dataframe counting the observed counts of each observed waiting time
-counts_obs <- waitingtimes3pen2018 %>%
-  group_by(diff_time) %>%
+counts_obs <- waitingtimes20182019_2 %>%
+  group_by(game_diff) %>%
   summarize(obs_count = n())
 
 # main dataframe that will have all possible waiting times and counts
-waitingtimes <- data.frame(diff_time = 0:most_games)
-waitingtimes <- merge(waitingtimes, counts_obs, by = "diff_time", all.x = TRUE)
+waitingtimes <- data.frame(game_diff = 0:most_games)
+waitingtimes <- merge(waitingtimes, counts_obs, by = "game_diff", all.x = TRUE)
 for (diff in 1:nrow(waitingtimes)) {
   if (is.na(waitingtimes$obs_count[diff])) {
     waitingtimes$obs_count[diff] <- 0
@@ -387,33 +471,42 @@ for (diff in 1:nrow(waitingtimes)) {
 
 
 #loop picking random games out of the games they played each season to have a penalty in 
-for (i in 1:1000) {
-  randompenalties <- data.frame(Player = waitingtimes3pen2018$player_id, first_penalty = NA, second_penalty = NA, third_penalty = NA)
-  for (player in 1:nrow(randompenalties)) {
-    num_games <- waitingtimes3pen2018$game_count[player]
-    randomgames <- sample(1:num_games, 3, replace = TRUE)
-    randompenalties$first_penalty[player] <- randomgames[1]
-    randompenalties$second_penalty[player] <- randomgames[2]
-    randompenalties$third_penalty[player] <- randomgames[3]
+randomwaitingtimes_list <- list()
+for (i in 1:100) {
+  randomwaitingtimes1_list <- list()
+  for (p in 1:n_distinct(waitingtimes20182019_2$player_id)) {
+    for (player in waitingtimes20182019_2$player_id) {
+      num_games <- waitingtimes20182019_2$game_count[waitingtimes20182019_2$player_id == player]
+      num_penalties <- sum(waitingtimes20182019_2$player_id == player) + 1
+      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+      randomgames_ordered <- sort(randomgames)
+      player_diffs <- filter(waitingtimes20182019_2, player_id == player)
+      
+      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
+      for (game in 1:(num_penalties - 1)){
+        penalty_game <- randomgames_ordered[game]
+        randomwaitingtimes$penalty_game[game] <- penalty_game
+        
+        next_penalty_game <- randomgames_ordered[game + 1]
+        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+        
+        game_diff <- abs(next_penalty_game - penalty_game)
+        randomwaitingtimes$game_diff[game] <- game_diff
+      }
+    }
+    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
   }
   
-  game_diffs1 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = second_penalty - first_penalty,
-              .groups = 'drop')
+  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
   
-  game_diffs2 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = third_penalty - second_penalty,
-              .groups = 'drop')
-  game_diffs <- rbind(game_diffs1, game_diffs2)
   
-  game_counts <- game_diffs %>%
-    group_by(diff_time) %>%
+  game_counts <- randomwaitingtimes_list[[i]] %>%
+    group_by(game_diff) %>%
     summarize(count = n())
   
-  counts <- data.frame(diff_time = 0:most_games)
-  counts <- merge(counts, game_counts, by = "diff_time", all.x = TRUE)
+  counts <- data.frame(game_diff = 0:most_games)
+  counts <- merge(counts, game_counts, by = "game_diff", all.x = TRUE)
   for (diff in 1:nrow(waitingtimes)) {
     if (is.na(counts$count[diff])) {
       counts$count[diff] <- 0
@@ -428,51 +521,52 @@ quantile_list <- list()
 
 # pulling the values from each row (which are the counts for each waiting time from each iteration)
 for (i in 1:nrow(waitingtimes)) {
-  values <- as.numeric(waitingtimes[i, 3:1002])
+  values <- as.numeric(waitingtimes[i, 3:102])
   quantiles <- quantile(values, probs = c(0.025, 0.975))
   quantile_list[[i]] <- quantiles
 }
 
 quantiles_df <- do.call(rbind, quantile_list)
 # making a data frame with all of the simulation values and quantiles
-waitingtimes_quantiles <- cbind(waitingtimes, quantiles_df)
+obswaitingtimes <- waitingtimes[, c("game_diff", "obs_count")]
+waitingtimes_quantiles <- cbind(obswaitingtimes, quantiles_df)
 
 waitingtimes_quantiles <- waitingtimes_quantiles %>%
   rename(lower_bound = "2.5%",
          upper_bound = "97.5%")
 
 p <- ggplot(data = waitingtimes_quantiles) + 
-  geom_point(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_line(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_point(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_point(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  geom_point(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_line(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_point(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  scale_y_continuous(breaks = (0:100)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
-  labs(x = "Game difference", y = "Count of players")+
+  labs(title = paste0("Waiting Times of Players with ", num_penalties, " Penalties in the 2018-2019 Season"), x = "Difference in Game Order for Player's Consecutive Penalties", y = "Count of players")+
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
 p
 
-ggsave("results/waitingtimes3pen20182019.png",p,bg="white")
+ggsave("results/waitingtimes20182019_2.png",p,bg="white")
 
 #2018-2019
-#players with 4 penalties
+#waiting times for players with the third most common penalty amount
 
-waitingtimes4pen2018 <- waiting_times(2018, 4)
+waitingtimes20182019_3 <- as.data.frame(waitingtimes20182019[3])
 
-most_games <- max(waitingtimes4pen2018$game_count)
+most_games <- max(waitingtimes20182019_3$game_count)
 
 # dataframe counting the observed counts of each observed waiting time
-counts_obs <- waitingtimes4pen2018 %>%
-  group_by(diff_time) %>%
+counts_obs <- waitingtimes20182019_3 %>%
+  group_by(game_diff) %>%
   summarize(obs_count = n())
 
 # main dataframe that will have all possible waiting times and counts
-waitingtimes <- data.frame(diff_time = 0:most_games)
-waitingtimes <- merge(waitingtimes, counts_obs, by = "diff_time", all.x = TRUE)
+waitingtimes <- data.frame(game_diff = 0:most_games)
+waitingtimes <- merge(waitingtimes, counts_obs, by = "game_diff", all.x = TRUE)
 for (diff in 1:nrow(waitingtimes)) {
   if (is.na(waitingtimes$obs_count[diff])) {
     waitingtimes$obs_count[diff] <- 0
@@ -481,39 +575,42 @@ for (diff in 1:nrow(waitingtimes)) {
 
 
 #loop picking random games out of the games they played each season to have a penalty in 
-for (i in 1:1000) {
-  randompenalties <- data.frame(Player = waitingtimes4pen2018$player_id, first_penalty = NA, second_penalty = NA, third_penalty = NA, fourth_penalty = NA)
-  for (player in 1:nrow(randompenalties)) {
-    num_games <- waitingtimes4pen2018$game_count[player]
-    randomgames <- sample(1:num_games, 4, replace = TRUE)
-    randompenalties$first_penalty[player] <- randomgames[1]
-    randompenalties$second_penalty[player] <- randomgames[2]
-    randompenalties$third_penalty[player] <- randomgames[3]
-    randompenalties$fourth_penalty[player] <- randomgames[4]
+randomwaitingtimes_list <- list()
+for (i in 1:100) {
+  randomwaitingtimes1_list <- list()
+  for (p in 1:n_distinct(waitingtimes20182019_3$player_id)) {
+    for (player in waitingtimes20182019_3$player_id) {
+      num_games <- waitingtimes20182019_3$game_count[waitingtimes20182019_3$player_id == player]
+      num_penalties <- sum(waitingtimes20182019_3$player_id == player) + 1
+      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+      randomgames_ordered <- sort(randomgames)
+      player_diffs <- filter(waitingtimes20182019_3, player_id == player)
+      
+      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
+      for (game in 1:(num_penalties - 1)){
+        penalty_game <- randomgames_ordered[game]
+        randomwaitingtimes$penalty_game[game] <- penalty_game
+        
+        next_penalty_game <- randomgames_ordered[game + 1]
+        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+        
+        game_diff <- abs(next_penalty_game - penalty_game)
+        randomwaitingtimes$game_diff[game] <- game_diff
+      }
+    }
+    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
   }
   
-  game_diffs1 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = second_penalty - first_penalty,
-              .groups = 'drop')
+  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
   
-  game_diffs2 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = third_penalty - second_penalty,
-              .groups = 'drop')
   
-  game_diffs3 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = fourth_penalty - third_penalty,
-              .groups = 'drop')
-  game_diffs <- rbind(game_diffs1, game_diffs2, game_diffs3)
-  
-  game_counts <- game_diffs %>%
-    group_by(diff_time) %>%
+  game_counts <- randomwaitingtimes_list[[i]] %>%
+    group_by(game_diff) %>%
     summarize(count = n())
   
-  counts <- data.frame(diff_time = 0:most_games)
-  counts <- merge(counts, game_counts, by = "diff_time", all.x = TRUE)
+  counts <- data.frame(game_diff = 0:most_games)
+  counts <- merge(counts, game_counts, by = "game_diff", all.x = TRUE)
   for (diff in 1:nrow(waitingtimes)) {
     if (is.na(counts$count[diff])) {
       counts$count[diff] <- 0
@@ -528,51 +625,55 @@ quantile_list <- list()
 
 # pulling the values from each row (which are the counts for each waiting time from each iteration)
 for (i in 1:nrow(waitingtimes)) {
-  values <- as.numeric(waitingtimes[i, 3:1002])
+  values <- as.numeric(waitingtimes[i, 3:102])
   quantiles <- quantile(values, probs = c(0.025, 0.975))
   quantile_list[[i]] <- quantiles
 }
 
 quantiles_df <- do.call(rbind, quantile_list)
 # making a data frame with all of the simulation values and quantiles
-waitingtimes_quantiles <- cbind(waitingtimes, quantiles_df)
+obswaitingtimes <- waitingtimes[, c("game_diff", "obs_count")]
+waitingtimes_quantiles <- cbind(obswaitingtimes, quantiles_df)
 
 waitingtimes_quantiles <- waitingtimes_quantiles %>%
   rename(lower_bound = "2.5%",
          upper_bound = "97.5%")
 
 p <- ggplot(data = waitingtimes_quantiles) + 
-  geom_point(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_line(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_point(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_point(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  geom_point(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_line(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_point(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  scale_y_continuous(breaks = (0:100)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
-  labs(x = "Game difference", y = "Count of players")+
+  labs(title = paste0("Waiting Times of Players with ", num_penalties, " Penalties in the 2018-2019 Season"), x = "Difference in Game Order for Player's Consecutive Penalties", y = "Count of players")+
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
 p
 
-ggsave("results/waitingtimes4pen20182019.png",p,bg="white")
+ggsave("results/waitingtimes20182019_3.png",p,bg="white")
+
+
 
 #2017-2018
-#players with 2 penalties
+#waiting times for players with the most common penalty amount
 
-waitingtimes2pen2017 <- waiting_times(2017, 2)
+waitingtimes20172018 <- waiting_times(2017)
+waitingtimes20172018_1 <- as.data.frame(waitingtimes20172018[1])
 
-most_games <- max(waitingtimes2pen2017$game_count)
+most_games <- max(waitingtimes20172018_1$game_count)
 
 # dataframe counting the observed counts of each observed waiting time
-counts_obs <- waitingtimes2pen2017 %>%
-  group_by(diff_time) %>%
+counts_obs <- waitingtimes20172018_1 %>%
+  group_by(game_diff) %>%
   summarize(obs_count = n())
 
 # main dataframe that will have all possible waiting times and counts
-waitingtimes <- data.frame(diff_time = 0:most_games)
-waitingtimes <- merge(waitingtimes, counts_obs, by = "diff_time", all.x = TRUE)
+waitingtimes <- data.frame(game_diff = 0:most_games)
+waitingtimes <- merge(waitingtimes, counts_obs, by = "game_diff", all.x = TRUE)
 for (diff in 1:nrow(waitingtimes)) {
   if (is.na(waitingtimes$obs_count[diff])) {
     waitingtimes$obs_count[diff] <- 0
@@ -581,24 +682,42 @@ for (diff in 1:nrow(waitingtimes)) {
 
 
 #loop picking random games out of the games they played each season to have a penalty in 
-for (i in 1:1000) {
-  randompenalties <- data.frame(Player = waitingtimes2pen2017$player_id, first_penalty = NA, second_penalty = NA)
-  for (player in 1:nrow(randompenalties)) {
-    num_games <- waitingtimes2pen2017$game_count[player]
-    randomgames <- sample(1:num_games, 2, replace = TRUE)
-    randompenalties$first_penalty[player] <- randomgames[1]
-    randompenalties$second_penalty[player] <- randomgames[2]
+randomwaitingtimes_list <- list()
+for (i in 1:100) {
+  randomwaitingtimes1_list <- list()
+  for (p in 1:n_distinct(waitingtimes20172018_1$player_id)) {
+    for (player in waitingtimes20172018_1$player_id) {
+      num_games <- waitingtimes20172018_1$game_count[waitingtimes20172018_1$player_id == player]
+      num_penalties <- sum(waitingtimes20172018_1$player_id == player) + 1
+      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+      randomgames_ordered <- sort(randomgames)
+      player_diffs <- filter(waitingtimes20172018_1, player_id == player)
+      
+      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
+      for (game in 1:(num_penalties - 1)){
+        penalty_game <- randomgames_ordered[game]
+        randomwaitingtimes$penalty_game[game] <- penalty_game
+        
+        next_penalty_game <- randomgames_ordered[game + 1]
+        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+        
+        game_diff <- abs(next_penalty_game - penalty_game)
+        randomwaitingtimes$game_diff[game] <- game_diff
+      }
+    }
+    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
   }
-  game_diffs <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = abs(first_penalty - second_penalty))
   
-  game_counts <- game_diffs %>%
-    group_by(diff_time) %>%
+  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
+  
+  
+  game_counts <- randomwaitingtimes_list[[i]] %>%
+    group_by(game_diff) %>%
     summarize(count = n())
   
-  counts <- data.frame(diff_time = 0:most_games)
-  counts <- merge(counts, game_counts, by = "diff_time", all.x = TRUE)
+  counts <- data.frame(game_diff = 0:most_games)
+  counts <- merge(counts, game_counts, by = "game_diff", all.x = TRUE)
   for (diff in 1:nrow(waitingtimes)) {
     if (is.na(counts$count[diff])) {
       counts$count[diff] <- 0
@@ -613,51 +732,52 @@ quantile_list <- list()
 
 # pulling the values from each row (which are the counts for each waiting time from each iteration)
 for (i in 1:nrow(waitingtimes)) {
-  values <- as.numeric(waitingtimes[i, 3:1002])
+  values <- as.numeric(waitingtimes[i, 3:102])
   quantiles <- quantile(values, probs = c(0.025, 0.975))
   quantile_list[[i]] <- quantiles
 }
 
 quantiles_df <- do.call(rbind, quantile_list)
 # making a data frame with all of the simulation values and quantiles
-waitingtimes_quantiles <- cbind(waitingtimes, quantiles_df)
+obswaitingtimes <- waitingtimes[, c("game_diff", "obs_count")]
+waitingtimes_quantiles <- cbind(obswaitingtimes, quantiles_df)
 
 waitingtimes_quantiles <- waitingtimes_quantiles %>%
   rename(lower_bound = "2.5%",
          upper_bound = "97.5%")
 
 p <- ggplot(data = waitingtimes_quantiles) + 
-  geom_point(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_line(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_point(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_point(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  geom_point(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_line(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_point(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  scale_y_continuous(breaks = (0:100)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
-  labs(x = "Game difference", y = "Count of players")+
+  labs(title = paste0("Waiting Times of Players with ", num_penalties, " Penalties in the 2017-2018 Season"), x = "Difference in Game Order for Player's Consecutive Penalties", y = "Count of players")+
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
 p
 
-ggsave("results/waitingtimes20172018.png",p,bg="white")
+ggsave("results/waitingtimes20172018_1.png",p,bg="white")
 
 #2017-2018
-#players with 3 penalties
+#waiting times for players with the second most common penalty amount
 
-waitingtimes3pen2017 <- waiting_times(2017, 3)
+waitingtimes20172018_2 <- as.data.frame(waitingtimes20172018[2])
 
-most_games <- max(waitingtimes3pen2017$game_count)
+most_games <- max(waitingtimes20172018_2$game_count)
 
 # dataframe counting the observed counts of each observed waiting time
-counts_obs <- waitingtimes3pen2017 %>%
-  group_by(diff_time) %>%
+counts_obs <- waitingtimes20172018_2 %>%
+  group_by(game_diff) %>%
   summarize(obs_count = n())
 
 # main dataframe that will have all possible waiting times and counts
-waitingtimes <- data.frame(diff_time = 0:most_games)
-waitingtimes <- merge(waitingtimes, counts_obs, by = "diff_time", all.x = TRUE)
+waitingtimes <- data.frame(game_diff = 0:most_games)
+waitingtimes <- merge(waitingtimes, counts_obs, by = "game_diff", all.x = TRUE)
 for (diff in 1:nrow(waitingtimes)) {
   if (is.na(waitingtimes$obs_count[diff])) {
     waitingtimes$obs_count[diff] <- 0
@@ -666,33 +786,42 @@ for (diff in 1:nrow(waitingtimes)) {
 
 
 #loop picking random games out of the games they played each season to have a penalty in 
-for (i in 1:1000) {
-  randompenalties <- data.frame(Player = waitingtimes3pen2017$player_id, first_penalty = NA, second_penalty = NA, third_penalty = NA)
-  for (player in 1:nrow(randompenalties)) {
-    num_games <- waitingtimes3pen2017$game_count[player]
-    randomgames <- sample(1:num_games, 3, replace = TRUE)
-    randompenalties$first_penalty[player] <- randomgames[1]
-    randompenalties$second_penalty[player] <- randomgames[2]
-    randompenalties$third_penalty[player] <- randomgames[3]
+randomwaitingtimes_list <- list()
+for (i in 1:100) {
+  randomwaitingtimes1_list <- list()
+  for (p in 1:n_distinct(waitingtimes20172018_2$player_id)) {
+    for (player in waitingtimes20172018_2$player_id) {
+      num_games <- waitingtimes20172018_2$game_count[waitingtimes20172018_2$player_id == player]
+      num_penalties <- sum(waitingtimes20172018_2$player_id == player) + 1
+      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+      randomgames_ordered <- sort(randomgames)
+      player_diffs <- filter(waitingtimes20172018_2, player_id == player)
+      
+      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
+      for (game in 1:(num_penalties - 1)){
+        penalty_game <- randomgames_ordered[game]
+        randomwaitingtimes$penalty_game[game] <- penalty_game
+        
+        next_penalty_game <- randomgames_ordered[game + 1]
+        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+        
+        game_diff <- abs(next_penalty_game - penalty_game)
+        randomwaitingtimes$game_diff[game] <- game_diff
+      }
+    }
+    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
   }
   
-  game_diffs1 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = second_penalty - first_penalty,
-              .groups = 'drop')
+  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
   
-  game_diffs2 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = third_penalty - second_penalty,
-              .groups = 'drop')
-  game_diffs <- rbind(game_diffs1, game_diffs2)
   
-  game_counts <- game_diffs %>%
-    group_by(diff_time) %>%
+  game_counts <- randomwaitingtimes_list[[i]] %>%
+    group_by(game_diff) %>%
     summarize(count = n())
   
-  counts <- data.frame(diff_time = 0:most_games)
-  counts <- merge(counts, game_counts, by = "diff_time", all.x = TRUE)
+  counts <- data.frame(game_diff = 0:most_games)
+  counts <- merge(counts, game_counts, by = "game_diff", all.x = TRUE)
   for (diff in 1:nrow(waitingtimes)) {
     if (is.na(counts$count[diff])) {
       counts$count[diff] <- 0
@@ -707,51 +836,52 @@ quantile_list <- list()
 
 # pulling the values from each row (which are the counts for each waiting time from each iteration)
 for (i in 1:nrow(waitingtimes)) {
-  values <- as.numeric(waitingtimes[i, 3:1002])
+  values <- as.numeric(waitingtimes[i, 3:102])
   quantiles <- quantile(values, probs = c(0.025, 0.975))
   quantile_list[[i]] <- quantiles
 }
 
 quantiles_df <- do.call(rbind, quantile_list)
 # making a data frame with all of the simulation values and quantiles
-waitingtimes_quantiles <- cbind(waitingtimes, quantiles_df)
+obswaitingtimes <- waitingtimes[, c("game_diff", "obs_count")]
+waitingtimes_quantiles <- cbind(obswaitingtimes, quantiles_df)
 
 waitingtimes_quantiles <- waitingtimes_quantiles %>%
   rename(lower_bound = "2.5%",
          upper_bound = "97.5%")
 
 p <- ggplot(data = waitingtimes_quantiles) + 
-  geom_point(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_line(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_point(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_point(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  geom_point(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_line(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_point(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  scale_y_continuous(breaks = (0:100)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
-  labs(x = "Game difference", y = "Count of players")+
+  labs(title = paste0("Waiting Times of Players with ", num_penalties, " Penalties in the 2017-2018 Season"), x = "Difference in Game Order for Player's Consecutive Penalties", y = "Count of players")+
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
 p
 
-ggsave("results/waitingtimes3pen20172018.png",p,bg="white")
+ggsave("results/waitingtimes20172018_2.png",p,bg="white")
 
 #2017-2018
-#players with 4 penalties
+#waiting times for players with the third most common penalty amount
 
-waitingtimes4pen2017 <- waiting_times(2017, 4)
+waitingtimes20172018_3 <- as.data.frame(waitingtimes20172018[3])
 
-most_games <- max(waitingtimes4pen2017$game_count)
+most_games <- max(waitingtimes20172018_3$game_count)
 
 # dataframe counting the observed counts of each observed waiting time
-counts_obs <- waitingtimes4pen2017 %>%
-  group_by(diff_time) %>%
+counts_obs <- waitingtimes20172018_3 %>%
+  group_by(game_diff) %>%
   summarize(obs_count = n())
 
 # main dataframe that will have all possible waiting times and counts
-waitingtimes <- data.frame(diff_time = 0:most_games)
-waitingtimes <- merge(waitingtimes, counts_obs, by = "diff_time", all.x = TRUE)
+waitingtimes <- data.frame(game_diff = 0:most_games)
+waitingtimes <- merge(waitingtimes, counts_obs, by = "game_diff", all.x = TRUE)
 for (diff in 1:nrow(waitingtimes)) {
   if (is.na(waitingtimes$obs_count[diff])) {
     waitingtimes$obs_count[diff] <- 0
@@ -760,39 +890,42 @@ for (diff in 1:nrow(waitingtimes)) {
 
 
 #loop picking random games out of the games they played each season to have a penalty in 
-for (i in 1:1000) {
-  randompenalties <- data.frame(Player = waitingtimes4pen2017$player_id, first_penalty = NA, second_penalty = NA, third_penalty = NA, fourth_penalty = NA)
-  for (player in 1:nrow(randompenalties)) {
-    num_games <- waitingtimes4pen2017$game_count[player]
-    randomgames <- sample(1:num_games, 4, replace = TRUE)
-    randompenalties$first_penalty[player] <- randomgames[1]
-    randompenalties$second_penalty[player] <- randomgames[2]
-    randompenalties$third_penalty[player] <- randomgames[3]
-    randompenalties$fourth_penalty[player] <- randomgames[4]
+randomwaitingtimes_list <- list()
+for (i in 1:100) {
+  randomwaitingtimes1_list <- list()
+  for (p in 1:n_distinct(waitingtimes20172018_3$player_id)) {
+    for (player in waitingtimes20172018_3$player_id) {
+      num_games <- waitingtimes20172018_3$game_count[waitingtimes20172018_3$player_id == player]
+      num_penalties <- sum(waitingtimes20172018_3$player_id == player) + 1
+      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+      randomgames_ordered <- sort(randomgames)
+      player_diffs <- filter(waitingtimes20172018_3, player_id == player)
+      
+      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
+      for (game in 1:(num_penalties - 1)){
+        penalty_game <- randomgames_ordered[game]
+        randomwaitingtimes$penalty_game[game] <- penalty_game
+        
+        next_penalty_game <- randomgames_ordered[game + 1]
+        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+        
+        game_diff <- abs(next_penalty_game - penalty_game)
+        randomwaitingtimes$game_diff[game] <- game_diff
+      }
+    }
+    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
   }
   
-  game_diffs1 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = second_penalty - first_penalty,
-              .groups = 'drop')
+  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
   
-  game_diffs2 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = third_penalty - second_penalty,
-              .groups = 'drop')
   
-  game_diffs3 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = fourth_penalty - third_penalty,
-              .groups = 'drop')
-  game_diffs <- rbind(game_diffs1, game_diffs2, game_diffs3)
-  
-  game_counts <- game_diffs %>%
-    group_by(diff_time) %>%
+  game_counts <- randomwaitingtimes_list[[i]] %>%
+    group_by(game_diff) %>%
     summarize(count = n())
   
-  counts <- data.frame(diff_time = 0:most_games)
-  counts <- merge(counts, game_counts, by = "diff_time", all.x = TRUE)
+  counts <- data.frame(game_diff = 0:most_games)
+  counts <- merge(counts, game_counts, by = "game_diff", all.x = TRUE)
   for (diff in 1:nrow(waitingtimes)) {
     if (is.na(counts$count[diff])) {
       counts$count[diff] <- 0
@@ -807,51 +940,54 @@ quantile_list <- list()
 
 # pulling the values from each row (which are the counts for each waiting time from each iteration)
 for (i in 1:nrow(waitingtimes)) {
-  values <- as.numeric(waitingtimes[i, 3:1002])
+  values <- as.numeric(waitingtimes[i, 3:102])
   quantiles <- quantile(values, probs = c(0.025, 0.975))
   quantile_list[[i]] <- quantiles
 }
 
 quantiles_df <- do.call(rbind, quantile_list)
 # making a data frame with all of the simulation values and quantiles
-waitingtimes_quantiles <- cbind(waitingtimes, quantiles_df)
+obswaitingtimes <- waitingtimes[, c("game_diff", "obs_count")]
+waitingtimes_quantiles <- cbind(obswaitingtimes, quantiles_df)
 
 waitingtimes_quantiles <- waitingtimes_quantiles %>%
   rename(lower_bound = "2.5%",
          upper_bound = "97.5%")
 
 p <- ggplot(data = waitingtimes_quantiles) + 
-  geom_point(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_line(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_point(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_point(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  geom_point(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_line(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_point(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  scale_y_continuous(breaks = (0:100)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
-  labs(x = "Game difference", y = "Count of players")+
+  labs(title = paste0("Waiting Times of Players with ", num_penalties, " Penalties in the 2017-2018 Season"), x = "Difference in Game Order for Player's Consecutive Penalties", y = "Count of players")+
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
 p
 
-ggsave("results/waitingtimes4pen20172018.png",p,bg="white")
+ggsave("results/waitingtimes20172018_3.png",p,bg="white")
+
 
 #2016-2017
-#players with 2 penalties
+#waiting times for players with the most common penalty amount
 
-waitingtimes2pen2016 <- waiting_times(2016, 2)
+waitingtimes20162017 <- waiting_times(2016)
+waitingtimes20162017_1 <- as.data.frame(waitingtimes20162017[1])
 
-most_games <- max(waitingtimes2pen2016$game_count)
+most_games <- max(waitingtimes20162017_1$game_count)
 
 # dataframe counting the observed counts of each observed waiting time
-counts_obs <- waitingtimes2pen2016 %>%
-  group_by(diff_time) %>%
+counts_obs <- waitingtimes20162017_1 %>%
+  group_by(game_diff) %>%
   summarize(obs_count = n())
 
 # main dataframe that will have all possible waiting times and counts
-waitingtimes <- data.frame(diff_time = 0:most_games)
-waitingtimes <- merge(waitingtimes, counts_obs, by = "diff_time", all.x = TRUE)
+waitingtimes <- data.frame(game_diff = 0:most_games)
+waitingtimes <- merge(waitingtimes, counts_obs, by = "game_diff", all.x = TRUE)
 for (diff in 1:nrow(waitingtimes)) {
   if (is.na(waitingtimes$obs_count[diff])) {
     waitingtimes$obs_count[diff] <- 0
@@ -860,24 +996,42 @@ for (diff in 1:nrow(waitingtimes)) {
 
 
 #loop picking random games out of the games they played each season to have a penalty in 
-for (i in 1:1000) {
-  randompenalties <- data.frame(Player = waitingtimes2pen2016$player_id, first_penalty = NA, second_penalty = NA)
-  for (player in 1:nrow(randompenalties)) {
-    num_games <- waitingtimes2pen2016$game_count[player]
-    randomgames <- sample(1:num_games, 2, replace = TRUE)
-    randompenalties$first_penalty[player] <- randomgames[1]
-    randompenalties$second_penalty[player] <- randomgames[2]
+randomwaitingtimes_list <- list()
+for (i in 1:100) {
+  randomwaitingtimes1_list <- list()
+  for (p in 1:n_distinct(waitingtimes20162017_1$player_id)) {
+    for (player in waitingtimes20162017_1$player_id) {
+      num_games <- waitingtimes20162017_1$game_count[waitingtimes20162017_1$player_id == player]
+      num_penalties <- sum(waitingtimes20162017_1$player_id == player) + 1
+      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+      randomgames_ordered <- sort(randomgames)
+      player_diffs <- filter(waitingtimes20162017_1, player_id == player)
+      
+      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
+      for (game in 1:(num_penalties - 1)){
+        penalty_game <- randomgames_ordered[game]
+        randomwaitingtimes$penalty_game[game] <- penalty_game
+        
+        next_penalty_game <- randomgames_ordered[game + 1]
+        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+        
+        game_diff <- abs(next_penalty_game - penalty_game)
+        randomwaitingtimes$game_diff[game] <- game_diff
+      }
+    }
+    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
   }
-  game_diffs <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = abs(first_penalty - second_penalty))
   
-  game_counts <- game_diffs %>%
-    group_by(diff_time) %>%
+  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
+  
+  
+  game_counts <- randomwaitingtimes_list[[i]] %>%
+    group_by(game_diff) %>%
     summarize(count = n())
   
-  counts <- data.frame(diff_time = 0:most_games)
-  counts <- merge(counts, game_counts, by = "diff_time", all.x = TRUE)
+  counts <- data.frame(game_diff = 0:most_games)
+  counts <- merge(counts, game_counts, by = "game_diff", all.x = TRUE)
   for (diff in 1:nrow(waitingtimes)) {
     if (is.na(counts$count[diff])) {
       counts$count[diff] <- 0
@@ -892,51 +1046,52 @@ quantile_list <- list()
 
 # pulling the values from each row (which are the counts for each waiting time from each iteration)
 for (i in 1:nrow(waitingtimes)) {
-  values <- as.numeric(waitingtimes[i, 3:1002])
+  values <- as.numeric(waitingtimes[i, 3:102])
   quantiles <- quantile(values, probs = c(0.025, 0.975))
   quantile_list[[i]] <- quantiles
 }
 
 quantiles_df <- do.call(rbind, quantile_list)
 # making a data frame with all of the simulation values and quantiles
-waitingtimes_quantiles <- cbind(waitingtimes, quantiles_df)
+obswaitingtimes <- waitingtimes[, c("game_diff", "obs_count")]
+waitingtimes_quantiles <- cbind(obswaitingtimes, quantiles_df)
 
 waitingtimes_quantiles <- waitingtimes_quantiles %>%
   rename(lower_bound = "2.5%",
          upper_bound = "97.5%")
 
 p <- ggplot(data = waitingtimes_quantiles) + 
-  geom_point(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_line(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_point(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_point(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  geom_point(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_line(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_point(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  scale_y_continuous(breaks = (0:100)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
-  labs(x = "Game difference", y = "Count of players")+
+  labs(title = paste0("Waiting Times of Players with ", num_penalties, " Penalties in the 2016-2017 Season"), x = "Difference in Game Order for Player's Consecutive Penalties", y = "Count of players")+
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
 p
 
-ggsave("results/waitingtimes2pen20162017.png",p,bg="white")
+ggsave("results/waitingtimes20162017_1.png",p,bg="white")
 
 #2016-2017
-#players with 3 penalties
+#waiting times for players with the second most common penalty amount
 
-waitingtimes3pen2016 <- waiting_times(2016, 3)
+waitingtimes20162017_2 <- as.data.frame(waitingtimes20162017[2])
 
-most_games <- max(waitingtimes3pen2016$game_count)
+most_games <- max(waitingtimes20162017_2$game_count)
 
 # dataframe counting the observed counts of each observed waiting time
-counts_obs <- waitingtimes3pen2016 %>%
-  group_by(diff_time) %>%
+counts_obs <- waitingtimes20162017_2 %>%
+  group_by(game_diff) %>%
   summarize(obs_count = n())
 
 # main dataframe that will have all possible waiting times and counts
-waitingtimes <- data.frame(diff_time = 0:most_games)
-waitingtimes <- merge(waitingtimes, counts_obs, by = "diff_time", all.x = TRUE)
+waitingtimes <- data.frame(game_diff = 0:most_games)
+waitingtimes <- merge(waitingtimes, counts_obs, by = "game_diff", all.x = TRUE)
 for (diff in 1:nrow(waitingtimes)) {
   if (is.na(waitingtimes$obs_count[diff])) {
     waitingtimes$obs_count[diff] <- 0
@@ -945,33 +1100,42 @@ for (diff in 1:nrow(waitingtimes)) {
 
 
 #loop picking random games out of the games they played each season to have a penalty in 
-for (i in 1:1000) {
-  randompenalties <- data.frame(Player = waitingtimes3pen2016$player_id, first_penalty = NA, second_penalty = NA, third_penalty = NA)
-  for (player in 1:nrow(randompenalties)) {
-    num_games <- waitingtimes3pen2016$game_count[player]
-    randomgames <- sample(1:num_games, 3, replace = TRUE)
-    randompenalties$first_penalty[player] <- randomgames[1]
-    randompenalties$second_penalty[player] <- randomgames[2]
-    randompenalties$third_penalty[player] <- randomgames[3]
+randomwaitingtimes_list <- list()
+for (i in 1:100) {
+  randomwaitingtimes1_list <- list()
+  for (p in 1:n_distinct(waitingtimes20162017_2$player_id)) {
+    for (player in waitingtimes20162017_2$player_id) {
+      num_games <- waitingtimes20162017_2$game_count[waitingtimes20162017_2$player_id == player]
+      num_penalties <- sum(waitingtimes20162017_2$player_id == player) + 1
+      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+      randomgames_ordered <- sort(randomgames)
+      player_diffs <- filter(waitingtimes20162017_2, player_id == player)
+      
+      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
+      for (game in 1:(num_penalties - 1)){
+        penalty_game <- randomgames_ordered[game]
+        randomwaitingtimes$penalty_game[game] <- penalty_game
+        
+        next_penalty_game <- randomgames_ordered[game + 1]
+        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+        
+        game_diff <- abs(next_penalty_game - penalty_game)
+        randomwaitingtimes$game_diff[game] <- game_diff
+      }
+    }
+    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
   }
   
-  game_diffs1 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = second_penalty - first_penalty,
-              .groups = 'drop')
+  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
   
-  game_diffs2 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = third_penalty - second_penalty,
-              .groups = 'drop')
-  game_diffs <- rbind(game_diffs1, game_diffs2)
   
-  game_counts <- game_diffs %>%
-    group_by(diff_time) %>%
+  game_counts <- randomwaitingtimes_list[[i]] %>%
+    group_by(game_diff) %>%
     summarize(count = n())
   
-  counts <- data.frame(diff_time = 0:most_games)
-  counts <- merge(counts, game_counts, by = "diff_time", all.x = TRUE)
+  counts <- data.frame(game_diff = 0:most_games)
+  counts <- merge(counts, game_counts, by = "game_diff", all.x = TRUE)
   for (diff in 1:nrow(waitingtimes)) {
     if (is.na(counts$count[diff])) {
       counts$count[diff] <- 0
@@ -986,51 +1150,52 @@ quantile_list <- list()
 
 # pulling the values from each row (which are the counts for each waiting time from each iteration)
 for (i in 1:nrow(waitingtimes)) {
-  values <- as.numeric(waitingtimes[i, 3:1002])
+  values <- as.numeric(waitingtimes[i, 3:102])
   quantiles <- quantile(values, probs = c(0.025, 0.975))
   quantile_list[[i]] <- quantiles
 }
 
 quantiles_df <- do.call(rbind, quantile_list)
 # making a data frame with all of the simulation values and quantiles
-waitingtimes_quantiles <- cbind(waitingtimes, quantiles_df)
+obswaitingtimes <- waitingtimes[, c("game_diff", "obs_count")]
+waitingtimes_quantiles <- cbind(obswaitingtimes, quantiles_df)
 
 waitingtimes_quantiles <- waitingtimes_quantiles %>%
   rename(lower_bound = "2.5%",
          upper_bound = "97.5%")
 
 p <- ggplot(data = waitingtimes_quantiles) + 
-  geom_point(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_line(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_point(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_point(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  geom_point(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_line(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_point(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  scale_y_continuous(breaks = (0:100)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
-  labs(x = "Game difference", y = "Count of players")+
+  labs(title = paste0("Waiting Times of Players with ", num_penalties, " Penalties in the 2016-2017 Season"), x = "Difference in Game Order for Player's Consecutive Penalties", y = "Count of players")+
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
 p
 
-ggsave("results/waitingtimes3pen20162017.png",p,bg="white")
+ggsave("results/waitingtimes20162017_2.png",p,bg="white")
 
 #2016-2017
-#players with 4 penalties
+#waiting times for players with the third most common penalty amount
 
-waitingtimes4pen2016 <- waiting_times(2016, 4)
+waitingtimes20162017_3 <- as.data.frame(waitingtimes20162017[3])
 
-most_games <- max(waitingtimes4pen2016$game_count)
+most_games <- max(waitingtimes20162017_3$game_count)
 
 # dataframe counting the observed counts of each observed waiting time
-counts_obs <- waitingtimes4pen2016 %>%
-  group_by(diff_time) %>%
+counts_obs <- waitingtimes20162017_3 %>%
+  group_by(game_diff) %>%
   summarize(obs_count = n())
 
 # main dataframe that will have all possible waiting times and counts
-waitingtimes <- data.frame(diff_time = 0:most_games)
-waitingtimes <- merge(waitingtimes, counts_obs, by = "diff_time", all.x = TRUE)
+waitingtimes <- data.frame(game_diff = 0:most_games)
+waitingtimes <- merge(waitingtimes, counts_obs, by = "game_diff", all.x = TRUE)
 for (diff in 1:nrow(waitingtimes)) {
   if (is.na(waitingtimes$obs_count[diff])) {
     waitingtimes$obs_count[diff] <- 0
@@ -1039,39 +1204,42 @@ for (diff in 1:nrow(waitingtimes)) {
 
 
 #loop picking random games out of the games they played each season to have a penalty in 
-for (i in 1:1000) {
-  randompenalties <- data.frame(Player = waitingtimes4pen2016$player_id, first_penalty = NA, second_penalty = NA, third_penalty = NA, fourth_penalty = NA)
-  for (player in 1:nrow(randompenalties)) {
-    num_games <- waitingtimes4pen2016$game_count[player]
-    randomgames <- sample(1:num_games, 4, replace = TRUE)
-    randompenalties$first_penalty[player] <- randomgames[1]
-    randompenalties$second_penalty[player] <- randomgames[2]
-    randompenalties$third_penalty[player] <- randomgames[3]
-    randompenalties$fourth_penalty[player] <- randomgames[4]
+randomwaitingtimes_list <- list()
+for (i in 1:100) {
+  randomwaitingtimes1_list <- list()
+  for (p in 1:n_distinct(waitingtimes20162017_3$player_id)) {
+    for (player in waitingtimes20162017_3$player_id) {
+      num_games <- waitingtimes20162017_3$game_count[waitingtimes20162017_3$player_id == player]
+      num_penalties <- sum(waitingtimes20162017_3$player_id == player) + 1
+      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+      randomgames_ordered <- sort(randomgames)
+      player_diffs <- filter(waitingtimes20162017_3, player_id == player)
+      
+      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
+      for (game in 1:(num_penalties - 1)){
+        penalty_game <- randomgames_ordered[game]
+        randomwaitingtimes$penalty_game[game] <- penalty_game
+        
+        next_penalty_game <- randomgames_ordered[game + 1]
+        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+        
+        game_diff <- abs(next_penalty_game - penalty_game)
+        randomwaitingtimes$game_diff[game] <- game_diff
+      }
+    }
+    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
   }
   
-  game_diffs1 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = second_penalty - first_penalty,
-              .groups = 'drop')
+  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
   
-  game_diffs2 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = third_penalty - second_penalty,
-              .groups = 'drop')
   
-  game_diffs3 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = fourth_penalty - third_penalty,
-              .groups = 'drop')
-  game_diffs <- rbind(game_diffs1, game_diffs2, game_diffs3)
-  
-  game_counts <- game_diffs %>%
-    group_by(diff_time) %>%
+  game_counts <- randomwaitingtimes_list[[i]] %>%
+    group_by(game_diff) %>%
     summarize(count = n())
   
-  counts <- data.frame(diff_time = 0:most_games)
-  counts <- merge(counts, game_counts, by = "diff_time", all.x = TRUE)
+  counts <- data.frame(game_diff = 0:most_games)
+  counts <- merge(counts, game_counts, by = "game_diff", all.x = TRUE)
   for (diff in 1:nrow(waitingtimes)) {
     if (is.na(counts$count[diff])) {
       counts$count[diff] <- 0
@@ -1086,51 +1254,54 @@ quantile_list <- list()
 
 # pulling the values from each row (which are the counts for each waiting time from each iteration)
 for (i in 1:nrow(waitingtimes)) {
-  values <- as.numeric(waitingtimes[i, 3:1002])
+  values <- as.numeric(waitingtimes[i, 3:102])
   quantiles <- quantile(values, probs = c(0.025, 0.975))
   quantile_list[[i]] <- quantiles
 }
 
 quantiles_df <- do.call(rbind, quantile_list)
 # making a data frame with all of the simulation values and quantiles
-waitingtimes_quantiles <- cbind(waitingtimes, quantiles_df)
+obswaitingtimes <- waitingtimes[, c("game_diff", "obs_count")]
+waitingtimes_quantiles <- cbind(obswaitingtimes, quantiles_df)
 
 waitingtimes_quantiles <- waitingtimes_quantiles %>%
   rename(lower_bound = "2.5%",
          upper_bound = "97.5%")
 
 p <- ggplot(data = waitingtimes_quantiles) + 
-  geom_point(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_line(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_point(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_point(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  geom_point(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_line(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_point(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  scale_y_continuous(breaks = (0:100)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
-  labs(x = "Game difference", y = "Count of players")+
+  labs(title = paste0("Waiting Times of Players with ", num_penalties, " Penalties in the 2016-2017 Season"), x = "Difference in Game Order for Player's Consecutive Penalties", y = "Count of players")+
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
 p
 
-ggsave("results/waitingtimes4pen20162017.png",p,bg="white")
+ggsave("results/waitingtimes20162017_3.png",p,bg="white")
+
 
 #2015-2016
-#players with 2 penalties
+#waiting times for players with the most common penalty amount
 
-waitingtimes2pen2015 <- waiting_times(2015, 2)
+waitingtimes20152016 <- waiting_times(2015)
+waitingtimes20152016_1 <- as.data.frame(waitingtimes20152016[1])
 
-most_games <- max(waitingtimes2pen2015$game_count)
+most_games <- max(waitingtimes20152016_1$game_count)
 
 # dataframe counting the observed counts of each observed waiting time
-counts_obs <- waitingtimes2pen2015 %>%
-  group_by(diff_time) %>%
+counts_obs <- waitingtimes20152016_1 %>%
+  group_by(game_diff) %>%
   summarize(obs_count = n())
 
 # main dataframe that will have all possible waiting times and counts
-waitingtimes <- data.frame(diff_time = 0:most_games)
-waitingtimes <- merge(waitingtimes, counts_obs, by = "diff_time", all.x = TRUE)
+waitingtimes <- data.frame(game_diff = 0:most_games)
+waitingtimes <- merge(waitingtimes, counts_obs, by = "game_diff", all.x = TRUE)
 for (diff in 1:nrow(waitingtimes)) {
   if (is.na(waitingtimes$obs_count[diff])) {
     waitingtimes$obs_count[diff] <- 0
@@ -1139,24 +1310,42 @@ for (diff in 1:nrow(waitingtimes)) {
 
 
 #loop picking random games out of the games they played each season to have a penalty in 
-for (i in 1:1000) {
-  randompenalties <- data.frame(Player = waitingtimes2pen2015$player_id, first_penalty = NA, second_penalty = NA)
-  for (player in 1:nrow(randompenalties)) {
-    num_games <- waitingtimes2pen2015$game_count[player]
-    randomgames <- sample(1:num_games, 2, replace = TRUE)
-    randompenalties$first_penalty[player] <- randomgames[1]
-    randompenalties$second_penalty[player] <- randomgames[2]
+randomwaitingtimes_list <- list()
+for (i in 1:100) {
+  randomwaitingtimes1_list <- list()
+  for (p in 1:n_distinct(waitingtimes20152016_1$player_id)) {
+    for (player in waitingtimes20152016_1$player_id) {
+      num_games <- waitingtimes20152016_1$game_count[waitingtimes20152016_1$player_id == player]
+      num_penalties <- sum(waitingtimes20152016_1$player_id == player) + 1
+      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+      randomgames_ordered <- sort(randomgames)
+      player_diffs <- filter(waitingtimes20152016_1, player_id == player)
+      
+      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
+      for (game in 1:(num_penalties - 1)){
+        penalty_game <- randomgames_ordered[game]
+        randomwaitingtimes$penalty_game[game] <- penalty_game
+        
+        next_penalty_game <- randomgames_ordered[game + 1]
+        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+        
+        game_diff <- abs(next_penalty_game - penalty_game)
+        randomwaitingtimes$game_diff[game] <- game_diff
+      }
+    }
+    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
   }
-  game_diffs <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = abs(first_penalty - second_penalty))
   
-  game_counts <- game_diffs %>%
-    group_by(diff_time) %>%
+  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
+  
+  
+  game_counts <- randomwaitingtimes_list[[i]] %>%
+    group_by(game_diff) %>%
     summarize(count = n())
   
-  counts <- data.frame(diff_time = 0:most_games)
-  counts <- merge(counts, game_counts, by = "diff_time", all.x = TRUE)
+  counts <- data.frame(game_diff = 0:most_games)
+  counts <- merge(counts, game_counts, by = "game_diff", all.x = TRUE)
   for (diff in 1:nrow(waitingtimes)) {
     if (is.na(counts$count[diff])) {
       counts$count[diff] <- 0
@@ -1171,51 +1360,52 @@ quantile_list <- list()
 
 # pulling the values from each row (which are the counts for each waiting time from each iteration)
 for (i in 1:nrow(waitingtimes)) {
-  values <- as.numeric(waitingtimes[i, 3:1002])
+  values <- as.numeric(waitingtimes[i, 3:102])
   quantiles <- quantile(values, probs = c(0.025, 0.975))
   quantile_list[[i]] <- quantiles
 }
 
 quantiles_df <- do.call(rbind, quantile_list)
 # making a data frame with all of the simulation values and quantiles
-waitingtimes_quantiles <- cbind(waitingtimes, quantiles_df)
+obswaitingtimes <- waitingtimes[, c("game_diff", "obs_count")]
+waitingtimes_quantiles <- cbind(obswaitingtimes, quantiles_df)
 
 waitingtimes_quantiles <- waitingtimes_quantiles %>%
   rename(lower_bound = "2.5%",
          upper_bound = "97.5%")
 
 p <- ggplot(data = waitingtimes_quantiles) + 
-  geom_point(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_line(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_point(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_point(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  geom_point(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_line(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_point(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  scale_y_continuous(breaks = (0:100)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
-  labs(x = "Game difference", y = "Count of players")+
+  labs(title = paste0("Waiting Times of Players with ", num_penalties, " Penalties in the 2015-2016 Season"), x = "Difference in Game Order for Player's Consecutive Penalties", y = "Count of players")+
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
 p
 
-ggsave("results/waitingtimes2pen20152016.png",p,bg="white")
+ggsave("results/waitingtimes20152016_1.png",p,bg="white")
 
 #2015-2016
-#players with 3 penalties
+#waiting times for players with the second most common penalty amount
 
-waitingtimes3pen2015 <- waiting_times(2015, 3)
+waitingtimes20152016_2 <- as.data.frame(waitingtimes20152016[2])
 
-most_games <- max(waitingtimes3pen2015$game_count)
+most_games <- max(waitingtimes20152016_2$game_count)
 
 # dataframe counting the observed counts of each observed waiting time
-counts_obs <- waitingtimes3pen2015 %>%
-  group_by(diff_time) %>%
+counts_obs <- waitingtimes20152016_2 %>%
+  group_by(game_diff) %>%
   summarize(obs_count = n())
 
 # main dataframe that will have all possible waiting times and counts
-waitingtimes <- data.frame(diff_time = 0:most_games)
-waitingtimes <- merge(waitingtimes, counts_obs, by = "diff_time", all.x = TRUE)
+waitingtimes <- data.frame(game_diff = 0:most_games)
+waitingtimes <- merge(waitingtimes, counts_obs, by = "game_diff", all.x = TRUE)
 for (diff in 1:nrow(waitingtimes)) {
   if (is.na(waitingtimes$obs_count[diff])) {
     waitingtimes$obs_count[diff] <- 0
@@ -1224,33 +1414,42 @@ for (diff in 1:nrow(waitingtimes)) {
 
 
 #loop picking random games out of the games they played each season to have a penalty in 
-for (i in 1:1000) {
-  randompenalties <- data.frame(Player = waitingtimes3pen2015$player_id, first_penalty = NA, second_penalty = NA, third_penalty = NA)
-  for (player in 1:nrow(randompenalties)) {
-    num_games <- waitingtimes3pen2015$game_count[player]
-    randomgames <- sample(1:num_games, 3, replace = TRUE)
-    randompenalties$first_penalty[player] <- randomgames[1]
-    randompenalties$second_penalty[player] <- randomgames[2]
-    randompenalties$third_penalty[player] <- randomgames[3]
+randomwaitingtimes_list <- list()
+for (i in 1:100) {
+  randomwaitingtimes1_list <- list()
+  for (p in 1:n_distinct(waitingtimes20152016_2$player_id)) {
+    for (player in waitingtimes20152016_2$player_id) {
+      num_games <- waitingtimes20152016_2$game_count[waitingtimes20152016_2$player_id == player]
+      num_penalties <- sum(waitingtimes20152016_2$player_id == player) + 1
+      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+      randomgames_ordered <- sort(randomgames)
+      player_diffs <- filter(waitingtimes20152016_2, player_id == player)
+      
+      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
+      for (game in 1:(num_penalties - 1)){
+        penalty_game <- randomgames_ordered[game]
+        randomwaitingtimes$penalty_game[game] <- penalty_game
+        
+        next_penalty_game <- randomgames_ordered[game + 1]
+        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+        
+        game_diff <- abs(next_penalty_game - penalty_game)
+        randomwaitingtimes$game_diff[game] <- game_diff
+      }
+    }
+    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
   }
   
-  game_diffs1 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = second_penalty - first_penalty,
-              .groups = 'drop')
+  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
   
-  game_diffs2 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = third_penalty - second_penalty,
-              .groups = 'drop')
-  game_diffs <- rbind(game_diffs1, game_diffs2)
   
-  game_counts <- game_diffs %>%
-    group_by(diff_time) %>%
+  game_counts <- randomwaitingtimes_list[[i]] %>%
+    group_by(game_diff) %>%
     summarize(count = n())
   
-  counts <- data.frame(diff_time = 0:most_games)
-  counts <- merge(counts, game_counts, by = "diff_time", all.x = TRUE)
+  counts <- data.frame(game_diff = 0:most_games)
+  counts <- merge(counts, game_counts, by = "game_diff", all.x = TRUE)
   for (diff in 1:nrow(waitingtimes)) {
     if (is.na(counts$count[diff])) {
       counts$count[diff] <- 0
@@ -1265,51 +1464,52 @@ quantile_list <- list()
 
 # pulling the values from each row (which are the counts for each waiting time from each iteration)
 for (i in 1:nrow(waitingtimes)) {
-  values <- as.numeric(waitingtimes[i, 3:1002])
+  values <- as.numeric(waitingtimes[i, 3:102])
   quantiles <- quantile(values, probs = c(0.025, 0.975))
   quantile_list[[i]] <- quantiles
 }
 
 quantiles_df <- do.call(rbind, quantile_list)
 # making a data frame with all of the simulation values and quantiles
-waitingtimes_quantiles <- cbind(waitingtimes, quantiles_df)
+obswaitingtimes <- waitingtimes[, c("game_diff", "obs_count")]
+waitingtimes_quantiles <- cbind(obswaitingtimes, quantiles_df)
 
 waitingtimes_quantiles <- waitingtimes_quantiles %>%
   rename(lower_bound = "2.5%",
          upper_bound = "97.5%")
 
 p <- ggplot(data = waitingtimes_quantiles) + 
-  geom_point(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_line(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_point(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_point(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  geom_point(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_line(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_point(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  scale_y_continuous(breaks = (0:100)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
-  labs(x = "Game difference", y = "Count of players")+
+  labs(title = paste0("Waiting Times of Players with ", num_penalties, " Penalties in the 2015-2016 Season"), x = "Difference in Game Order for Player's Consecutive Penalties", y = "Count of players")+
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
 p
 
-ggsave("results/waitingtimes3pen20152016.png",p,bg="white")
+ggsave("results/waitingtimes20152016_2.png",p,bg="white")
 
 #2015-2016
-#players with 4 penalties
+#waiting times for players with the third most common penalty amount
 
-waitingtimes4pen2015 <- waiting_times(2015, 4)
+waitingtimes20152016_3 <- as.data.frame(waitingtimes20152016[3])
 
-most_games <- max(waitingtimes4pen2015$game_count)
+most_games <- max(waitingtimes20152016_3$game_count)
 
 # dataframe counting the observed counts of each observed waiting time
-counts_obs <- waitingtimes4pen2015 %>%
-  group_by(diff_time) %>%
+counts_obs <- waitingtimes20152016_3 %>%
+  group_by(game_diff) %>%
   summarize(obs_count = n())
 
 # main dataframe that will have all possible waiting times and counts
-waitingtimes <- data.frame(diff_time = 0:most_games)
-waitingtimes <- merge(waitingtimes, counts_obs, by = "diff_time", all.x = TRUE)
+waitingtimes <- data.frame(game_diff = 0:most_games)
+waitingtimes <- merge(waitingtimes, counts_obs, by = "game_diff", all.x = TRUE)
 for (diff in 1:nrow(waitingtimes)) {
   if (is.na(waitingtimes$obs_count[diff])) {
     waitingtimes$obs_count[diff] <- 0
@@ -1318,39 +1518,42 @@ for (diff in 1:nrow(waitingtimes)) {
 
 
 #loop picking random games out of the games they played each season to have a penalty in 
-for (i in 1:1000) {
-  randompenalties <- data.frame(Player = waitingtimes4pen2015$player_id, first_penalty = NA, second_penalty = NA, third_penalty = NA, fourth_penalty = NA)
-  for (player in 1:nrow(randompenalties)) {
-    num_games <- waitingtimes4pen2015$game_count[player]
-    randomgames <- sample(1:num_games, 4, replace = TRUE)
-    randompenalties$first_penalty[player] <- randomgames[1]
-    randompenalties$second_penalty[player] <- randomgames[2]
-    randompenalties$third_penalty[player] <- randomgames[3]
-    randompenalties$fourth_penalty[player] <- randomgames[4]
+randomwaitingtimes_list <- list()
+for (i in 1:100) {
+  randomwaitingtimes1_list <- list()
+  for (p in 1:n_distinct(waitingtimes20152016_3$player_id)) {
+    for (player in waitingtimes20152016_3$player_id) {
+      num_games <- waitingtimes20152016_3$game_count[waitingtimes20152016_3$player_id == player]
+      num_penalties <- sum(waitingtimes20152016_3$player_id == player) + 1
+      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+      randomgames_ordered <- sort(randomgames)
+      player_diffs <- filter(waitingtimes20152016_3, player_id == player)
+      
+      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
+      for (game in 1:(num_penalties - 1)){
+        penalty_game <- randomgames_ordered[game]
+        randomwaitingtimes$penalty_game[game] <- penalty_game
+        
+        next_penalty_game <- randomgames_ordered[game + 1]
+        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+        
+        game_diff <- abs(next_penalty_game - penalty_game)
+        randomwaitingtimes$game_diff[game] <- game_diff
+      }
+    }
+    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
   }
   
-  game_diffs1 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = second_penalty - first_penalty,
-              .groups = 'drop')
+  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
   
-  game_diffs2 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = third_penalty - second_penalty,
-              .groups = 'drop')
   
-  game_diffs3 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = fourth_penalty - third_penalty,
-              .groups = 'drop')
-  game_diffs <- rbind(game_diffs1, game_diffs2, game_diffs3)
-  
-  game_counts <- game_diffs %>%
-    group_by(diff_time) %>%
+  game_counts <- randomwaitingtimes_list[[i]] %>%
+    group_by(game_diff) %>%
     summarize(count = n())
   
-  counts <- data.frame(diff_time = 0:most_games)
-  counts <- merge(counts, game_counts, by = "diff_time", all.x = TRUE)
+  counts <- data.frame(game_diff = 0:most_games)
+  counts <- merge(counts, game_counts, by = "game_diff", all.x = TRUE)
   for (diff in 1:nrow(waitingtimes)) {
     if (is.na(counts$count[diff])) {
       counts$count[diff] <- 0
@@ -1365,51 +1568,54 @@ quantile_list <- list()
 
 # pulling the values from each row (which are the counts for each waiting time from each iteration)
 for (i in 1:nrow(waitingtimes)) {
-  values <- as.numeric(waitingtimes[i, 3:1002])
+  values <- as.numeric(waitingtimes[i, 3:102])
   quantiles <- quantile(values, probs = c(0.025, 0.975))
   quantile_list[[i]] <- quantiles
 }
 
 quantiles_df <- do.call(rbind, quantile_list)
 # making a data frame with all of the simulation values and quantiles
-waitingtimes_quantiles <- cbind(waitingtimes, quantiles_df)
+obswaitingtimes <- waitingtimes[, c("game_diff", "obs_count")]
+waitingtimes_quantiles <- cbind(obswaitingtimes, quantiles_df)
 
 waitingtimes_quantiles <- waitingtimes_quantiles %>%
   rename(lower_bound = "2.5%",
          upper_bound = "97.5%")
 
 p <- ggplot(data = waitingtimes_quantiles) + 
-  geom_point(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_line(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_point(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_point(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  geom_point(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_line(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_point(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  scale_y_continuous(breaks = (0:100)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
-  labs(x = "Game difference", y = "Count of players")+
+  labs(title = paste0("Waiting Times of Players with ", num_penalties, " Penalties in the 2015-2016 Season"), x = "Difference in Game Order for Player's Consecutive Penalties", y = "Count of players")+
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
 p
 
-ggsave("results/waitingtimes4pen20152016.png",p,bg="white")
+ggsave("results/waitingtimes20152016_3.png",p,bg="white")
+
 
 #2014-2015
-#players with 2 penalties
+# waiting times for players with the most common penalty amount
 
-waitingtimes2pen2014 <- waiting_times(2014, 2)
+waitingtimes20142015 <- waiting_times(2014)
+waitingtimes20142015_1 <- as.data.frame(waitingtimes20142015[1])
 
-most_games <- max(waitingtimes2pen2014$game_count)
+most_games <- max(waitingtimes20142015_1$game_count)
 
 # dataframe counting the observed counts of each observed waiting time
-counts_obs <- waitingtimes2pen2014 %>%
-  group_by(diff_time) %>%
+counts_obs <- waitingtimes20142015_1 %>%
+  group_by(game_diff) %>%
   summarize(obs_count = n())
 
 # main dataframe that will have all possible waiting times and counts
-waitingtimes <- data.frame(diff_time = 0:most_games)
-waitingtimes <- merge(waitingtimes, counts_obs, by = "diff_time", all.x = TRUE)
+waitingtimes <- data.frame(game_diff = 0:most_games)
+waitingtimes <- merge(waitingtimes, counts_obs, by = "game_diff", all.x = TRUE)
 for (diff in 1:nrow(waitingtimes)) {
   if (is.na(waitingtimes$obs_count[diff])) {
     waitingtimes$obs_count[diff] <- 0
@@ -1418,24 +1624,42 @@ for (diff in 1:nrow(waitingtimes)) {
 
 
 #loop picking random games out of the games they played each season to have a penalty in 
-for (i in 1:1000) {
-  randompenalties <- data.frame(Player = waitingtimes2pen2014$player_id, first_penalty = NA, second_penalty = NA)
-  for (player in 1:nrow(randompenalties)) {
-    num_games <- waitingtimes2pen2014$game_count[player]
-    randomgames <- sample(1:num_games, 2, replace = TRUE)
-    randompenalties$first_penalty[player] <- randomgames[1]
-    randompenalties$second_penalty[player] <- randomgames[2]
+randomwaitingtimes_list <- list()
+for (i in 1:100) {
+  randomwaitingtimes1_list <- list()
+  for (p in 1:n_distinct(waitingtimes20142015_1$player_id)) {
+    for (player in waitingtimes20142015_1$player_id) {
+      num_games <- waitingtimes20142015_1$game_count[waitingtimes20142015_1$player_id == player]
+      num_penalties <- sum(waitingtimes20142015_1$player_id == player) + 1
+      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+      randomgames_ordered <- sort(randomgames)
+      player_diffs <- filter(waitingtimes20142015_1, player_id == player)
+      
+      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
+      for (game in 1:(num_penalties - 1)){
+        penalty_game <- randomgames_ordered[game]
+        randomwaitingtimes$penalty_game[game] <- penalty_game
+        
+        next_penalty_game <- randomgames_ordered[game + 1]
+        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+        
+        game_diff <- abs(next_penalty_game - penalty_game)
+        randomwaitingtimes$game_diff[game] <- game_diff
+      }
+    }
+    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
   }
-  game_diffs <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = abs(first_penalty - second_penalty))
   
-  game_counts <- game_diffs %>%
-    group_by(diff_time) %>%
+  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
+  
+  
+  game_counts <- randomwaitingtimes_list[[i]] %>%
+    group_by(game_diff) %>%
     summarize(count = n())
   
-  counts <- data.frame(diff_time = 0:most_games)
-  counts <- merge(counts, game_counts, by = "diff_time", all.x = TRUE)
+  counts <- data.frame(game_diff = 0:most_games)
+  counts <- merge(counts, game_counts, by = "game_diff", all.x = TRUE)
   for (diff in 1:nrow(waitingtimes)) {
     if (is.na(counts$count[diff])) {
       counts$count[diff] <- 0
@@ -1450,51 +1674,52 @@ quantile_list <- list()
 
 # pulling the values from each row (which are the counts for each waiting time from each iteration)
 for (i in 1:nrow(waitingtimes)) {
-  values <- as.numeric(waitingtimes[i, 3:1002])
+  values <- as.numeric(waitingtimes[i, 3:102])
   quantiles <- quantile(values, probs = c(0.025, 0.975))
   quantile_list[[i]] <- quantiles
 }
 
 quantiles_df <- do.call(rbind, quantile_list)
 # making a data frame with all of the simulation values and quantiles
-waitingtimes_quantiles <- cbind(waitingtimes, quantiles_df)
+obswaitingtimes <- waitingtimes[, c("game_diff", "obs_count")]
+waitingtimes_quantiles <- cbind(obswaitingtimes, quantiles_df)
 
 waitingtimes_quantiles <- waitingtimes_quantiles %>%
   rename(lower_bound = "2.5%",
          upper_bound = "97.5%")
 
 p <- ggplot(data = waitingtimes_quantiles) + 
-  geom_point(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_line(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_point(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_point(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  geom_point(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_line(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_point(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  scale_y_continuous(breaks = (0:100)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
-  labs(x = "Game difference", y = "Count of players")+
+  labs(title = paste0("Waiting Times of Players with ", num_penalties, " Penalties in the 2014-2015 Season"), x = "Difference in Game Order for Player's Consecutive Penalties", y = "Count of players")+
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
 p
 
-ggsave("results/waitingtimes2pen20142015.png",p,bg="white")
+ggsave("results/waitingtimes20142015_1.png",p,bg="white")
 
 #2014-2015
-#players with 3 penalties
+#waiting times for players with the second most common penalty amount
 
-waitingtimes3pen2014 <- waiting_times(2014, 3)
+waitingtimes20142015_2 <- as.data.frame(waitingtimes20142015[2])
 
-most_games <- max(waitingtimes3pen2014$game_count)
+most_games <- max(waitingtimes20142015_2$game_count)
 
 # dataframe counting the observed counts of each observed waiting time
-counts_obs <- waitingtimes3pen2014 %>%
-  group_by(diff_time) %>%
+counts_obs <- waitingtimes20142015_2 %>%
+  group_by(game_diff) %>%
   summarize(obs_count = n())
 
 # main dataframe that will have all possible waiting times and counts
-waitingtimes <- data.frame(diff_time = 0:most_games)
-waitingtimes <- merge(waitingtimes, counts_obs, by = "diff_time", all.x = TRUE)
+waitingtimes <- data.frame(game_diff = 0:most_games)
+waitingtimes <- merge(waitingtimes, counts_obs, by = "game_diff", all.x = TRUE)
 for (diff in 1:nrow(waitingtimes)) {
   if (is.na(waitingtimes$obs_count[diff])) {
     waitingtimes$obs_count[diff] <- 0
@@ -1503,33 +1728,42 @@ for (diff in 1:nrow(waitingtimes)) {
 
 
 #loop picking random games out of the games they played each season to have a penalty in 
-for (i in 1:1000) {
-  randompenalties <- data.frame(Player = waitingtimes3pen2014$player_id, first_penalty = NA, second_penalty = NA, third_penalty = NA)
-  for (player in 1:nrow(randompenalties)) {
-    num_games <- waitingtimes3pen2014$game_count[player]
-    randomgames <- sample(1:num_games, 3, replace = TRUE)
-    randompenalties$first_penalty[player] <- randomgames[1]
-    randompenalties$second_penalty[player] <- randomgames[2]
-    randompenalties$third_penalty[player] <- randomgames[3]
+randomwaitingtimes_list <- list()
+for (i in 1:100) {
+  randomwaitingtimes1_list <- list()
+  for (p in 1:n_distinct(waitingtimes20142015_2$player_id)) {
+    for (player in waitingtimes20142015_2$player_id) {
+      num_games <- waitingtimes20142015_2$game_count[waitingtimes20142015_2$player_id == player]
+      num_penalties <- sum(waitingtimes20142015_2$player_id == player) + 1
+      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+      randomgames_ordered <- sort(randomgames)
+      player_diffs <- filter(waitingtimes20142015_2, player_id == player)
+      
+      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
+      for (game in 1:(num_penalties - 1)){
+        penalty_game <- randomgames_ordered[game]
+        randomwaitingtimes$penalty_game[game] <- penalty_game
+        
+        next_penalty_game <- randomgames_ordered[game + 1]
+        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+        
+        game_diff <- abs(next_penalty_game - penalty_game)
+        randomwaitingtimes$game_diff[game] <- game_diff
+      }
+    }
+    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
   }
   
-  game_diffs1 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = second_penalty - first_penalty,
-              .groups = 'drop')
+  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
   
-  game_diffs2 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = third_penalty - second_penalty,
-              .groups = 'drop')
-  game_diffs <- rbind(game_diffs1, game_diffs2)
   
-  game_counts <- game_diffs %>%
-    group_by(diff_time) %>%
+  game_counts <- randomwaitingtimes_list[[i]] %>%
+    group_by(game_diff) %>%
     summarize(count = n())
   
-  counts <- data.frame(diff_time = 0:most_games)
-  counts <- merge(counts, game_counts, by = "diff_time", all.x = TRUE)
+  counts <- data.frame(game_diff = 0:most_games)
+  counts <- merge(counts, game_counts, by = "game_diff", all.x = TRUE)
   for (diff in 1:nrow(waitingtimes)) {
     if (is.na(counts$count[diff])) {
       counts$count[diff] <- 0
@@ -1544,51 +1778,52 @@ quantile_list <- list()
 
 # pulling the values from each row (which are the counts for each waiting time from each iteration)
 for (i in 1:nrow(waitingtimes)) {
-  values <- as.numeric(waitingtimes[i, 3:1002])
+  values <- as.numeric(waitingtimes[i, 3:102])
   quantiles <- quantile(values, probs = c(0.025, 0.975))
   quantile_list[[i]] <- quantiles
 }
 
 quantiles_df <- do.call(rbind, quantile_list)
 # making a data frame with all of the simulation values and quantiles
-waitingtimes_quantiles <- cbind(waitingtimes, quantiles_df)
+obswaitingtimes <- waitingtimes[, c("game_diff", "obs_count")]
+waitingtimes_quantiles <- cbind(obswaitingtimes, quantiles_df)
 
 waitingtimes_quantiles <- waitingtimes_quantiles %>%
   rename(lower_bound = "2.5%",
          upper_bound = "97.5%")
 
 p <- ggplot(data = waitingtimes_quantiles) + 
-  geom_point(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_line(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_point(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_point(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  geom_point(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_line(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_point(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  scale_y_continuous(breaks = (0:100)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
-  labs(x = "Game difference", y = "Count of players")+
+  labs(title = paste0("Waiting Times of Players with ", num_penalties, " Penalties in the 2014-2015 Season"), x = "Difference in Game Order for Player's Consecutive Penalties", y = "Count of players")+
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
 p
 
-ggsave("results/waitingtimes3pen20142015.png",p,bg="white")
+ggsave("results/waitingtimes20142015_2.png",p,bg="white")
 
 #2014-2015
-#players with 4 penalties
+#waiting times for players with the third most common penalty amount
 
-waitingtimes4pen2014 <- waiting_times(2014, 4)
+waitingtimes20142015_3 <- as.data.frame(waitingtimes20142015[3])
 
-most_games <- max(waitingtimes4pen2014$game_count)
+most_games <- max(waitingtimes20142015_3$game_count)
 
 # dataframe counting the observed counts of each observed waiting time
-counts_obs <- waitingtimes4pen2014 %>%
-  group_by(diff_time) %>%
+counts_obs <- waitingtimes20142015_3 %>%
+  group_by(game_diff) %>%
   summarize(obs_count = n())
 
 # main dataframe that will have all possible waiting times and counts
-waitingtimes <- data.frame(diff_time = 0:most_games)
-waitingtimes <- merge(waitingtimes, counts_obs, by = "diff_time", all.x = TRUE)
+waitingtimes <- data.frame(game_diff = 0:most_games)
+waitingtimes <- merge(waitingtimes, counts_obs, by = "game_diff", all.x = TRUE)
 for (diff in 1:nrow(waitingtimes)) {
   if (is.na(waitingtimes$obs_count[diff])) {
     waitingtimes$obs_count[diff] <- 0
@@ -1597,39 +1832,42 @@ for (diff in 1:nrow(waitingtimes)) {
 
 
 #loop picking random games out of the games they played each season to have a penalty in 
-for (i in 1:1000) {
-  randompenalties <- data.frame(Player = waitingtimes4pen2014$player_id, first_penalty = NA, second_penalty = NA, third_penalty = NA, fourth_penalty = NA)
-  for (player in 1:nrow(randompenalties)) {
-    num_games <- waitingtimes4pen2014$game_count[player]
-    randomgames <- sample(1:num_games, 4, replace = TRUE)
-    randompenalties$first_penalty[player] <- randomgames[1]
-    randompenalties$second_penalty[player] <- randomgames[2]
-    randompenalties$third_penalty[player] <- randomgames[3]
-    randompenalties$fourth_penalty[player] <- randomgames[4]
+randomwaitingtimes_list <- list()
+for (i in 1:100) {
+  randomwaitingtimes1_list <- list()
+  for (p in 1:n_distinct(waitingtimes20142015_3$player_id)) {
+    for (player in waitingtimes20142015_3$player_id) {
+      num_games <- waitingtimes20142015_3$game_count[waitingtimes20142015_3$player_id == player]
+      num_penalties <- sum(waitingtimes20142015_3$player_id == player) + 1
+      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+      randomgames_ordered <- sort(randomgames)
+      player_diffs <- filter(waitingtimes20142015_3, player_id == player)
+      
+      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
+      for (game in 1:(num_penalties - 1)){
+        penalty_game <- randomgames_ordered[game]
+        randomwaitingtimes$penalty_game[game] <- penalty_game
+        
+        next_penalty_game <- randomgames_ordered[game + 1]
+        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+        
+        game_diff <- abs(next_penalty_game - penalty_game)
+        randomwaitingtimes$game_diff[game] <- game_diff
+      }
+    }
+    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
   }
   
-  game_diffs1 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = second_penalty - first_penalty,
-              .groups = 'drop')
+  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
   
-  game_diffs2 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = third_penalty - second_penalty,
-              .groups = 'drop')
   
-  game_diffs3 <- randompenalties %>%
-    group_by(Player) %>%
-    summarise(diff_time = fourth_penalty - third_penalty,
-              .groups = 'drop')
-  game_diffs <- rbind(game_diffs1, game_diffs2, game_diffs3)
-  
-  game_counts <- game_diffs %>%
-    group_by(diff_time) %>%
+  game_counts <- randomwaitingtimes_list[[i]] %>%
+    group_by(game_diff) %>%
     summarize(count = n())
   
-  counts <- data.frame(diff_time = 0:most_games)
-  counts <- merge(counts, game_counts, by = "diff_time", all.x = TRUE)
+  counts <- data.frame(game_diff = 0:most_games)
+  counts <- merge(counts, game_counts, by = "game_diff", all.x = TRUE)
   for (diff in 1:nrow(waitingtimes)) {
     if (is.na(counts$count[diff])) {
       counts$count[diff] <- 0
@@ -1644,35 +1882,36 @@ quantile_list <- list()
 
 # pulling the values from each row (which are the counts for each waiting time from each iteration)
 for (i in 1:nrow(waitingtimes)) {
-  values <- as.numeric(waitingtimes[i, 3:1002])
+  values <- as.numeric(waitingtimes[i, 3:102])
   quantiles <- quantile(values, probs = c(0.025, 0.975))
   quantile_list[[i]] <- quantiles
 }
 
 quantiles_df <- do.call(rbind, quantile_list)
 # making a data frame with all of the simulation values and quantiles
-waitingtimes_quantiles <- cbind(waitingtimes, quantiles_df)
+obswaitingtimes <- waitingtimes[, c("game_diff", "obs_count")]
+waitingtimes_quantiles <- cbind(obswaitingtimes, quantiles_df)
 
 waitingtimes_quantiles <- waitingtimes_quantiles %>%
   rename(lower_bound = "2.5%",
          upper_bound = "97.5%")
 
 p <- ggplot(data = waitingtimes_quantiles) + 
-  geom_point(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_line(mapping = aes(x = diff_time, y = obs_count, group=1, color = "Observed")) +
-  geom_point(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = lower_bound, group=1, color = "Lower Bound")) +
-  geom_point(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  geom_line(mapping = aes(x = diff_time, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  geom_point(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_line(mapping = aes(x = game_diff, y = obs_count, group=1, color = "Observed")) +
+  geom_point(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
+  geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
+  scale_y_continuous(breaks = (0:100)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
-  labs(x = "Game difference", y = "Count of players")+
+  labs(title = paste0("Waiting Times of Players with ", num_penalties, " Penalties in the 2014-2015 Season"), x = "Difference in Game Order for Player's Consecutive Penalties", y = "Count of players")+
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
 p
 
-ggsave("results/waitingtimes4pen20142015.png",p,bg="white")
+ggsave("results/waitingtimes20142015_3.png",p,bg="white")
 
 
 # season20192020 <- readRDS("intermediate_data/season20192020.rds")
@@ -1766,7 +2005,7 @@ ggsave("results/waitingtimes4pen20142015.png",p,bg="white")
 #   geom_line() +
 #   scale_y_continuous(limits = c(0,NA)) +
 #   scale_x_continuous(breaks = 1:31) +
-#   labs(x = "Game difference", y = "Count of players")+
+#   labs(x = "Difference in Game Order for Player's Consecutive Penalties", y = "Count of players")+
 #   theme_minimal() +
 #   theme(panel.grid.minor = element_blank())
 # 

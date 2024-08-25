@@ -1,89 +1,57 @@
 library(tidyverse)
 library(patchwork)
 
+# defining all of the functions and intermediate data
+
 # Open data
+# contains the play, game, and the player the penalty was on 
 player_penalties <- read.csv("data/plays_players.csv")
+
+# all penalties, the play id, penalty severity, and the minutes for the penalty
 penalties <- read.csv("data/game_penalties.csv")
+
+# information about all of the players
 players <- read.csv("data/player_info.csv")
-all_player_plays <- readRDS("data/plays_players1.rds")
+
+# all of the plays each player was a part of
+plays_players1 <- readRDS("data/plays_players1.rds")
+
+# information about each game
 games <- read.csv("data/games.csv")
 
-#filtering the penalties to only include plays from the player data frames 
+#filtering the penalties to only include plays that is matched with a player in the player data frames 
 filtered_penalties <- penalties %>%
   filter(play_id %in% player_penalties$'play_id')
 saveRDS(filtered_penalties,"intermediate_data/filtered_penalties.rds")
 
-# filtering out all penalties so that this data frame only has non-penalty plays
-player_plays_nonpenalty <- anti_join(all_player_plays, filtered_penalties, by = "play_id")
+# filtering out all of the penalty plays so that this data frame only has non-penalty plays
+player_plays_nonpenalty <- anti_join(plays_players1, filtered_penalties, by = "play_id")
 player_plays_nonpenalty$penaltySeverity <- NA
 player_plays_nonpenalty$penaltyMinutes <- 0
-saveRDS(all_player_plays, "intermediate_data/all_player_plays.rds")
+saveRDS(player_plays_nonpenalty, "intermediate_data/player_plays_nonpenalty.rds")
 
+# removing the time from the date column (first 10 characters have the day, month, and year of the game)
 games$date_time_GMT <- substr(games$date_time_GMT, 1, 10)
 games$date_time_GMT <- as.Date(games$date_time_GMT)
 saveRDS(games,"intermediate_data/games.rds")
 
+# games in chronological order
 games_ordered <- games %>% arrange(date_time_GMT)
 saveRDS(games_ordered,"data/games_ordered.rds")
 
 
-#Creating a data frame containing all information on penalty plays with the player_ids
+#Creating a data frame containing all information on penalty plays with the player_ids of the players the penalty was on 
 complete_penalty_info <- cbind(player_penalties, filtered_penalties)
 complete_penalty_info <- complete_penalty_info[, c("play_id", "game_id", "player_id", "playerType", "penaltySeverity", "penaltyMinutes")]
 saveRDS(complete_penalty_info, "intermediate_data/complete_penalty_info.rds")
 
+# bringing the penalty and non-penalty plays together- now all plays have the players involved and game info 
 all_player_plays <- rbind(complete_penalty_info, player_plays_nonpenalty)
-
 all_player_plays <- merge(all_player_plays, games_ordered, by = "game_id", all.x = TRUE)
-
-# # Creating a data frame that contains all information on all plays, including non-penalties
-# all_plays <- merge(all_player_plays, penalties, by = "play_id", all = TRUE)
-
-# unique_elements <- unique(complete_penalty_info$player_id)
-# print(unique_elements)
-
-
-# Calculating the total number of penalty minutes
-# all_player_plays <- all_player_plays %>%
-#   mutate(accumulated_column = cumsum(penaltyMinutes))
-
-# complete_penalty_info <- complete_penalty_info %>%
-#   group_by(penaltySeverity) %>%
-#   mutate(category_counts = n())
-
-# making a column with each player's total penalty minutes
-# all_player_plays <- all_player_plays %>%
-#   group_by(player_id) %>%
-#   mutate(totalPenaltyMinutes = sum(penaltyMinutes))
-
 saveRDS(all_player_plays,"intermediate_data/all_player_plays.rds")
 
-# Making only one entry for each player that still contains their total number of penalties
-unique_player_play_info <- all_player_plays %>%
-  filter(!duplicated(player_id))
 
-
-# creating a column that shows what percent of total penalties each player accounts for
-# unique_player_play_info$penaltyPercentages <- unique_player_play_info$'totalPenaltyMinutes' / sum(unique_player_play_info$'totalPenaltyMinutes')
-
-
-#sorting players total penalty minutes in descending order
-# unique_player_play_info <- unique_player_play_info[order(-unique_player_play_info$totalPenaltyMinutes), ]
-
-#creating a column ranking players from most penalty minutes to least
-# unique_player_play_info$ranked_players <- rank(-unique_player_play_info$totalPenaltyMinutes, ties.method = "first")
-# 
-# # a column creating player percentiles based on penalty minutes rankings
-# unique_player_play_info$playerPercentages <- (unique_player_play_info$ranked_players) / nrow(unique_player_play_info)
-# 
-# # calculating cumulative percentages of penalties in order
-# unique_player_play_info$cumPlays <- cumsum(unique_player_play_info$penaltyPercentages)
-# 
-# #sorting players total penalty minutes in descending order
-# unique_player_play_info <- unique_player_play_info[order(-unique_player_play_info$totalPenaltyMinutes), ]
-# 
-# saveRDS(unique_player_play_info, "intermediate_data/unique_player_play_info.rds")
-
+# looking at player careers 
 n_of_bins <- 10
 cut_breaks <- seq(0,1,length.out = n_of_bins+1)
 cut_breaks_labels <- sprintf(cut_breaks, fmt = "%.2f")
@@ -91,7 +59,7 @@ cut_breaks_labels <- paste(cut_breaks_labels[-length(cut_breaks_labels)],
                            cut_breaks_labels[-1],
                            sep = "-")
 
-# Calculate the grouping of penalties within each player career:
+# Calculate the grouping of penalties within each player career, how many penalties in each percentile of their career:
 careers <- all_player_plays %>% 
   arrange(player_id, game_id) %>% 
   group_by(player_id) %>% 
@@ -107,6 +75,7 @@ careers <- all_player_plays %>%
   arrange(player_id, game_percentile)
 saveRDS(careers,"intermediate_data/careers.rds")
 
+# shows what percent of players' penalties occurred in each portion of players career 
 career_data <- careers %>% 
   group_by(player_id,game_percentile) %>% 
   reframe(penalty_minutes_share = sum(penaltyMinutes) / dplyr::first(total_penalty_minutes)) %>% 
@@ -117,11 +86,13 @@ career_data <- careers %>%
   ungroup()
 saveRDS(career_data,"intermediate_data/career_data.rds")
 
+# displays the average fraction of penalties that occured in each phase of a the players' career
 mean_share_table <- career_data %>% 
   group_by(game_percentile) %>% 
   summarise(mean_share_of_total_penalty_minutes = round(mean(penalty_minutes_share),3))
 saveRDS(mean_share_table,"intermediate_data/mean_share_table.rds")
 
+# data frame that shows players total game count and total penalty count over their career
 player_games <- all_player_plays %>%
   group_by(player_id) %>%
   summarize(game_count = n_distinct(unique(game_id)),
@@ -129,12 +100,13 @@ player_games <- all_player_plays %>%
   )
 saveRDS(player_games,"intermediate_data/player_games.rds")
 
-# Summary table
+# Shows how many games each player played in
 tab_games_by_players <- all_player_plays %>% 
   group_by(player_id) %>% 
   summarise(unique_games = length(unique(game_id)))
 saveRDS(tab_games_by_players,"intermediate_data/tab_games_by_players.rds")
 
+# shows how many seasons each player played in
 tab_seasons_by_players <- all_player_plays %>%
   group_by(player_id) %>%
   summarise(unique_seasons = length(unique(season)))
@@ -148,7 +120,7 @@ normalized_player_data <- all_player_plays %>%
   mutate(normalized_plays = total_plays / sum(total_plays))
 saveRDS(normalized_player_data,"intermediate_data/normalized_player_data.rds")
 
-# data frame with the average amount of games played per season for players
+# data frame with the average amount of games played per season for players. divides the number of seasons played in by the total number of penalties
 averages <- normalized_player_data %>%
   group_by(player_id) %>%
   summarise(seasons_played = length(unique(season)),
@@ -164,25 +136,7 @@ player_game_count <- all_player_plays %>%
   )
 saveRDS(player_game_count,"intermediate_data/player_game_count.rds")
 
-# games that had penalties in each season
-season_penalties <- function(year) {
-  specific_season <- paste0(year, year+1)
-  seasondf <- filter(all_player_plays, season == specific_season)
-  penaltiesdf <- filter(seasondf, playerType == "PenaltyOn")
-  penaltygames <- penaltiesdf %>%
-    group_by(game_id) %>%
-    summarize_all(first)
-  penaltygames <- subset(penaltygames, select = game_id)
-
-  return(penaltygames)
-}
-
-save(season_penalties, file = "intermediate_data/season_penalties.RData")
-
-penaltygames_20192020 <- season_penalties(2019)
-
-
-# filtering by season 
+# makes a data frame of the plays in a specific season - input the year that is the first half of the desired season (for example for the 2019-2020 season input 2019)
 season_plays <- function(year) {
   specific_season <- paste0(year, year+1)
   seasondf <- filter(all_player_plays, season == specific_season)
@@ -192,148 +146,346 @@ season_plays <- function(year) {
 
 save(season_plays, file = "intermediate_data/season_plays.RData")
 
-season20192020 <- season_plays(2019)
-
-# saveRDS(season20192020,"intermediate_data/season20192020.rds")
-
-#variable counting the number of games in the season
+#variable counting the number of games in the season - input the year that is the first half of the desired season (for example for the 2019-2020 season input 2019)
 game_count_season <- function(year) {
-  game_count <- n_distinct(season_penalties(year)$game_id)
+  # uses the season_plays function to make the data frame
+  game_count <- n_distinct(season_plays(year)$game_id)
   return(game_count)
 }
 
 save(game_count_season, file = "intermediate_data/game_count_season.RData")
 
-gamecount2019 <- game_count_season(2019)
-
-
-# Trial Analysis for the 2019-2020 season
-# Data frame that shows the number of games and penalties for players during the 2019-2020 season 
+# Data frame that shows the number of games and penalties for players during a specific season. can specify penalty severity minor or major or with all together
+# input the year that is the first half of the desired season (for the 2019-2020 season input 2019)
  player_games_season <- function(year, penalty_severity = NULL) {
+   # for all penalties together
    if (is.null(penalty_severity)){
      player_games <- season_plays(year) %>%
+       # counting by player
        group_by(player_id) %>%
        summarize(game_count = n_distinct(unique(game_id)),
                  penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"])))
-     } else {
+     } else if (penalty_severity == "Major") {
       player_games <- season_plays(year) %>%
         group_by(player_id) %>%
         summarize(game_count = n_distinct(unique(game_id)),
-                  major_penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn" & penaltySeverity == penalty_severity])))
+                  penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn" & penaltySeverity == penalty_severity])))
+     } else if (penalty_severity == "Minor") {
+       player_games <- season_plays(year) %>%
+         group_by(player_id) %>%
+         summarize(game_count = n_distinct(unique(game_id)),
+                   penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn" & penaltySeverity == penalty_severity])))
      }
    
    return(player_games)
  }
  
 save(player_games_season, file = "intermediate_data/player_games_season.RData")
- 
-playergames20192020 <- player_games_season(2019)
-majorpenaltygames20192020 <- player_games_season(2019, "Major")
 
-#isolating players with a specific number of penalties in a season
+# function that returns the most common frequencies of penalties of the desired type in a season. 
+most_common_num_pens <- function(year, penalty_severity = NULL) {
+  if (is.null(penalty_severity)){
+    most_common <- player_games_season(year) %>%
+      group_by(penalty_count) %>%
+      summarize(count = n()) %>%
+      arrange(desc(count)) %>%
+      # need the penalty count to be > 1 so we can look at the waiting times
+      filter(penalty_count > 1)
+    numbers <- most_common$penalty_count[1:3]
+    return(numbers)
+  } else {
+    most_common <- player_games_season(year, penalty_severity) %>%
+      group_by(penalty_count) %>%
+      summarize(count = n()) %>%
+      arrange(desc(count)) %>%
+      filter(penalty_count > 1)
+    numbers <- most_common$penalty_count[1:3]
+    return(numbers)
+  }
+}
+
+save(most_common_num_pens, file = "intermediate_data/most_common_num_pens.RData")
+
+#function that returns a data frame with players with a specific number of penalties in a season by filtering by the number of penalties
 fixednumber_penalties_season <- function(year, penalties, penalty_severity = NULL) {
   if (is.null(penalty_severity)){
     playerswith_number_penalties <- filter(player_games_season(year, penalty_severity), penalty_count == penalties)
     return(playerswith_number_penalties)
-  } else {
-    playerswith_number_penalties <- filter(player_games_season(year, penalty_severity), major_penalty_count == penalties)
+  } else if (penalty_severity == "Major"){
+    playerswith_number_penalties <- filter(player_games_season(year, penalty_severity), penalty_count == penalties)
     return(playerswith_number_penalties)
-  }
-    
+  } else if (penalty_severity == "Minor"){
+    playerswith_number_penalties <- filter(player_games_season(year, penalty_severity), penalty_count == penalties)
+    return(playerswith_number_penalties)
+  } 
     
 }
 
 save(fixednumber_penalties_season, file = "intermediate_data/fixednumber_penalties_season.RData")
 
-twopens20192020 <- fixednumber_penalties_season(2019, 2)
-twomajorpens20192020 <- fixednumber_penalties_season(2019, 2, "Major")
-threepens20192020 <- fixednumber_penalties_season(2019, 3)
-
-# saveRDS(fixedwindow2pen_20192020,"intermediate_data/fixedwindow2pen_20192020.rds")
-
-x_pens_season <- subset(threepens20192020, select = -penalty_count)
-
-waiting_times <- function(year, penalties, penalty_severity = NULL) {
+# function that returns a data frame with player penalty games and the game differences between them
+# the three data frames are returned in a list
+# enter specific penalty numbers if you want, but if left null the function will use the top 3 most frequent penalty counts from the season_highest_pen_freq function for the year
+waiting_times <- function(year, penalty_severity = NULL, penalties1 = NULL, penalties2 = NULL , penalties3 = NULL){
+  season_highest_pen_freq <- most_common_num_pens(year, penalty_severity)
+  # the season_highest_pen_freq list has the frequencies in order, so the first entry will be the most frequent and so on 
+  if (is.null(penalties1)) {
+    penalties1 <- season_highest_pen_freq[1]
+  }
+  if (is.null(penalties2)) {
+    penalties2 <- season_highest_pen_freq[2]
+  }
+  if (is.null(penalties3)) {
+    penalties3 <- season_highest_pen_freq[3]
+  }
+  
+  # pulling up all of the play information from the season 
   season <- season_plays(year)
-  x_pens_season <- subset(fixednumber_penalties_season(year, penalties, penalty_severity), select = -penalty_count)
-  players_with_x_pens <- fixednumber_penalties_season(year, penalties, penalty_severity)$player_id
-  x_pen_playergames <- filter(season, player_id %in% players_with_x_pens)
   
-  noduplicates <- distinct(x_pen_playergames, play_id, .keep_all = TRUE)
+  # data frame that has the season game count of all of the players that had x penalties in the season 
+  x_pens_season1 <- subset(fixednumber_penalties_season(year, penalties1, penalty_severity), select = -penalty_count)
   
-  ranking_games <- noduplicates %>%
+  # extracting the column so that we have all of the players that had x penalties in the season
+  players_with_x_pens1 <- fixednumber_penalties_season(year, penalties1, penalty_severity)$player_id
+  
+  # full details on the games and plays for each player that had x penalties in the season 
+  x_pen_playergames1 <- filter(season, player_id %in% players_with_x_pens1)
+  
+  # each row occurs twice in the data frame, this way it only appears once
+  noduplicates1 <- distinct(x_pen_playergames1, play_id, .keep_all = TRUE)
+  
+  # ranking all of the season games for the players
+  ranking_games1 <- noduplicates1 %>%
+    group_by(player_id) %>%
+    summarise(game_order = dense_rank(date_time_GMT),
+              # keeping the playerType column so that we can filter out the penalty games
+              playerType = playerType)
+  
+  # data frame that just has players and the ranking of their penalty games
+  penalties_only1 <- filter(ranking_games1, playerType == "PenaltyOn")
+  
+  # the same thing but for the second penalty number
+  x_pens_season2 <- subset(fixednumber_penalties_season(year, penalties2, penalty_severity), select = -penalty_count)
+  players_with_x_pens2 <- fixednumber_penalties_season(year, penalties2, penalty_severity)$player_id
+  
+  x_pen_playergames2 <- filter(season, player_id %in% players_with_x_pens2)
+  
+  noduplicates2 <- distinct(x_pen_playergames2, play_id, .keep_all = TRUE)
+  
+  ranking_games2 <- noduplicates2 %>%
     group_by(player_id) %>%
     summarise(game_order = dense_rank(date_time_GMT),
               playerType = playerType)
   
-  penalties_only <- filter(ranking_games, playerType == "PenaltyOn")
+  penalties_only2 <- filter(ranking_games2, playerType == "PenaltyOn")
   
-  if (penalties == 2){
-    player_penalty_games <- penalties_only %>%
+  # the same thing but for the third penalty number
+  x_pens_season3 <- subset(fixednumber_penalties_season(year, penalties3, penalty_severity), select = -penalty_count)
+  players_with_x_pens3 <- fixednumber_penalties_season(year, penalties3, penalty_severity)$player_id
+  
+  x_pen_playergames3 <- filter(season, player_id %in% players_with_x_pens3)
+  
+  noduplicates3 <- distinct(x_pen_playergames3, play_id, .keep_all = TRUE)
+  
+  ranking_games3 <- noduplicates3 %>%
     group_by(player_id) %>%
-    summarise(first_penalty = game_order[1],
-              second_penalty = game_order[2],
-              diff_time = game_order[2] - game_order[1])
-    waiting_times <- merge(player_penalty_games, x_pens_season)
-    return(waiting_times)
-  } else if (penalties == 3){
-    player_penalty_games1 <- penalties_only %>%
-      group_by(player_id) %>%
-      summarise(first_penalty = game_order[1],
-                second_penalty = game_order[2],
-                third_penalty = game_order[3],
-                diff_time = game_order[2] - game_order[1])
-    player_penalty_games2 <- penalties_only %>%
-      group_by(player_id) %>%
-      summarise(first_penalty = game_order[1],
-                second_penalty = game_order[2],
-                third_penalty = game_order[3],
-                diff_time = game_order[3] - game_order[2])
-    player_penalty_games <- rbind(player_penalty_games1, player_penalty_games2)
-    waiting_times <- merge(player_penalty_games, x_pens_season)
-    return(waiting_times)
-  } else if (penalties == 4){
-    player_penalty_games1 <- penalties_only %>%
-      group_by(player_id) %>%
-      summarise(first_penalty = game_order[1],
-                second_penalty = game_order[2],
-                third_penalty = game_order[3],
-                fourth_penalty = game_order[4], 
-                diff_time = game_order[2] - game_order[1])
-    player_penalty_games2 <- penalties_only %>%
-      group_by(player_id) %>%
-      summarise(first_penalty = game_order[1],
-                second_penalty = game_order[2],
-                third_penalty = game_order[3],
-                fourth_penalty = game_order[4],
-                diff_time = game_order[3] - game_order[2])
-    player_penalty_games3 <- penalties_only %>%
-      group_by(player_id) %>%
-      summarise(first_penalty = game_order[1],
-                second_penalty = game_order[2],
-                third_penalty = game_order[3],
-                fourth_penalty = game_order[4],
-                diff_time = game_order[4] - game_order[3])
-    player_penalty_games <- rbind(player_penalty_games1, player_penalty_games2, player_penalty_games3)
-    waiting_times <- merge(player_penalty_games, x_pens_season)
-    return(waiting_times)
+    summarise(game_order = dense_rank(date_time_GMT),
+              playerType = playerType)
+  
+  penalties_only3 <- filter(ranking_games3, playerType == "PenaltyOn")
+  
+  # main list where all of the waiting times data frames will be stored in
+  waitingtimes_list <- list()
+  
+  #first df
+  # list to store each player's waiting times
+  waitingtimes1_list <- list()
+  for (player in penalties_only1$player_id) {
+    # data frame that has an individual player's penalty games ranked
+    player_diffs <- filter(penalties_only1, player_id == player)
+    # empty data frame for the waiting times of each player. player_id column is the player being looked at in each loop, and one less row than game_diffs because if there are x penalties there are x-1 waiting times
+    waitingtimes1 <- data.frame(player_id = player_diffs$player_id[1:(nrow(player_diffs)-1)], penalty_game = NA, next_penalty_game = NA, game_diff = NA, game_count = NA)
+    # goes through each penalty game and finds the difference in games between it and the next one
+    for (game in 1:(nrow(player_diffs) - 1)){
+      penalty_game <- player_diffs$game_order[game]
+      waitingtimes1$penalty_game[game] <- penalty_game
+      
+      next_penalty_game <- player_diffs$game_order[game + 1]
+      waitingtimes1$next_penalty_game[game] <- next_penalty_game
+      
+      game_diff <- next_penalty_game - penalty_game
+      waitingtimes1$game_diff[game] <- game_diff
+      
+      # adding the game count column to have for drawing random penalty games for the null distributions for the plots in 04_waiting_times
+      game_count <- x_pens_season1$game_count[x_pens_season1$player_id == player]
+      waitingtimes1$game_count[game] <- game_count
+    }
+    # adds each players data frame to the list created above
+    waitingtimes1_list[[player]] <- waitingtimes1
   }
-  #make values into a list and then figure out how to subtract them from one another. make a value for amount of entries
-  # waitingtimes <- penalties_only %>%
-  #   group_by(player_id) %>%
-  #   summarise(waiting_time = diff(game_order))
-  # return(waiting_times)
+  
+# combines all of the players waiting times into one data frame
+ waitingtimes1 <- do.call(rbind, waitingtimes1_list)
+ 
+ # adds the waiting times for players with the most frequent number of penalty occurences to the list
+ waitingtimes_list[[1]] <- waitingtimes1
+ 
+ # same exact thing for the second and third data frames
+ # second df
+ waitingtimes2_list <- list()
+ for (player in penalties_only2$player_id) {
+   player_diffs <- filter(penalties_only2, player_id == player)
+   waitingtimes2 <- data.frame(player_id = player_diffs$player_id[1:(nrow(player_diffs)-1)], penalty_game = NA, next_penalty_game = NA, game_diff = NA, game_count = NA)
+   for (game in 1:(nrow(player_diffs) - 1)){
+     penalty_game <- player_diffs$game_order[game]
+     waitingtimes2$penalty_game[game] <- penalty_game
+     
+     next_penalty_game <- player_diffs$game_order[game + 1]
+     waitingtimes2$next_penalty_game[game] <- next_penalty_game
+     
+     game_diff <- next_penalty_game - penalty_game
+     waitingtimes2$game_diff[game] <- game_diff
+     
+     game_count <- x_pens_season2$game_count[x_pens_season2$player_id == player]
+     waitingtimes2$game_count[game] <- game_count
+   }
+   waitingtimes2_list[[player]] <- waitingtimes2
+ }
+ 
+ waitingtimes2 <- do.call(rbind, waitingtimes2_list)
+ waitingtimes_list[[2]] <- waitingtimes2
+ 
+ #third df
+ waitingtimes3_list <- list()
+ #for (i in 1:n_distinct(penalties_only1$player_id)) {
+ for (player in penalties_only3$player_id) {
+   player_diffs <- filter(penalties_only3, player_id == player)
+   waitingtimes3 <- data.frame(player_id = player_diffs$player_id[1:(nrow(player_diffs)-1)], penalty_game = NA, next_penalty_game = NA, game_diff = NA, game_count = NA)
+   for (game in 1:(nrow(player_diffs) - 1)){
+     penalty_game <- player_diffs$game_order[game]
+     waitingtimes3$penalty_game[game] <- penalty_game
+     
+     next_penalty_game <- player_diffs$game_order[game + 1]
+     waitingtimes3$next_penalty_game[game] <- next_penalty_game
+     
+     game_diff <- next_penalty_game - penalty_game
+     waitingtimes3$game_diff[game] <- game_diff
+     
+     game_count <- x_pens_season3$game_count[x_pens_season3$player_id == player]
+     waitingtimes3$game_count[game] <- game_count
+   }
+   waitingtimes3_list[[player]] <- waitingtimes3
+ }
+ 
+ waitingtimes3 <- do.call(rbind, waitingtimes3_list)
+ waitingtimes_list[[3]] <- waitingtimes3
+ 
+ return(waitingtimes_list)
+ 
 }
 
-save(waitingtimes, file = "intermediate_data/waitingtimes.RData")
+save(waiting_times, file = "intermediate_data/waiting_times.RData")
 
-waitingtimes3pen2019 <- waiting_times(2019, 3)
-waitingtimes4pen2019 <- waiting_times(2019, 4)
-waitingtimes2pen2019 <- waiting_times(2019, 2)
-waitingtimes2pen2020 <- waiting_times(2020, 2)
-waitingtimes2pen2018 <- waiting_times(2018, 2)
+# old waiting times function that did not use a loop and only worked for specfic numbers of penalty frequencies, disregard
 
-# add if else commands, fix so that there isnt specification for major penalty column names
+  # player_penalty_games <- penalties_only1 %>%
+  #   group_by(player_id) %>%
+  #   for (diff in 1:nrow(player_penalty_games){
+  #     summarise(first_penalty = game_order[1],
+  #             second_penalty = game_order[2],
+  #             diff_time = game_order[2] - game_order[1])
+  # waiting_times <- merge(player_penalty_games, x_pens_season)
+  # return(waiting_times)
+#   
+#   if (penalties == 2){
+#     player_penalty_games <- penalties_only %>%
+#     group_by(player_id) %>%
+#     summarise(first_penalty = game_order[1],
+#               second_penalty = game_order[2],
+#               diff_time = game_order[2] - game_order[1])
+#     waiting_times <- merge(player_penalty_games, x_pens_season)
+#     return(waiting_times)
+#   } else if (penalties == 3){
+#     player_penalty_games1 <- penalties_only %>%
+#       group_by(player_id) %>%
+#       summarise(first_penalty = game_order[1],
+#                 second_penalty = game_order[2],
+#                 third_penalty = game_order[3],
+#                 diff_time = game_order[2] - game_order[1])
+#     player_penalty_games2 <- penalties_only %>%
+#       group_by(player_id) %>%
+#       summarise(first_penalty = game_order[1],
+#                 second_penalty = game_order[2],
+#                 third_penalty = game_order[3],
+#                 diff_time = game_order[3] - game_order[2])
+#     player_penalty_games <- rbind(player_penalty_games1, player_penalty_games2)
+#     waiting_times <- merge(player_penalty_games, x_pens_season)
+#     return(waiting_times)
+#   } else if (penalties == 4){
+#     player_penalty_games1 <- penalties_only %>%
+#       group_by(player_id) %>%
+#       summarise(first_penalty = game_order[1],
+#                 second_penalty = game_order[2],
+#                 third_penalty = game_order[3],
+#                 fourth_penalty = game_order[4], 
+#                 diff_time = game_order[2] - game_order[1])
+#     player_penalty_games2 <- penalties_only %>%
+#       group_by(player_id) %>%
+#       summarise(first_penalty = game_order[1],
+#                 second_penalty = game_order[2],
+#                 third_penalty = game_order[3],
+#                 fourth_penalty = game_order[4],
+#                 diff_time = game_order[3] - game_order[2])
+#     player_penalty_games3 <- penalties_only %>%
+#       group_by(player_id) %>%
+#       summarise(first_penalty = game_order[1],
+#                 second_penalty = game_order[2],
+#                 third_penalty = game_order[3],
+#                 fourth_penalty = game_order[4],
+#                 diff_time = game_order[4] - game_order[3])
+#     player_penalty_games <- rbind(player_penalty_games1, player_penalty_games2, player_penalty_games3)
+#     waiting_times <- merge(player_penalty_games, x_pens_season)
+#     return(waiting_times)
+#   } else if (penalties == 5){
+#     player_penalty_games1 <- penalties_only %>%
+#       group_by(player_id) %>%
+#       summarise(first_penalty = game_order[1],
+#                 second_penalty = game_order[2],
+#                 third_penalty = game_order[3],
+#                 fourth_penalty = game_order[4], 
+#                 fifth_penalty = game_order[5],
+#                 diff_time = game_order[2] - game_order[1])
+#     player_penalty_games2 <- penalties_only %>%
+#       group_by(player_id) %>%
+#       summarise(first_penalty = game_order[1],
+#                 second_penalty = game_order[2],
+#                 third_penalty = game_order[3],
+#                 fourth_penalty = game_order[4],
+#                 fifth_penalty = game_order[5],
+#                 diff_time = game_order[3] - game_order[2])
+#     player_penalty_games3 <- penalties_only %>%
+#       group_by(player_id) %>%
+#       summarise(first_penalty = game_order[1],
+#                 second_penalty = game_order[2],
+#                 third_penalty = game_order[3],
+#                 fourth_penalty = game_order[4],
+#                 fifth_penalty = game_order[5],
+#                 diff_time = game_order[4] - game_order[3])
+#     player_penalty_games4 <- penalties_only %>%
+#       group_by(player_id) %>%
+#       summarise(first_penalty = game_order[1],
+#                 second_penalty = game_order[2],
+#                 third_penalty = game_order[3],
+#                 fourth_penalty = game_order[4],
+#                 fifth_penalty = game_order[5],
+#                 diff_time = game_order[5] - game_order[4])
+#     player_penalty_games <- rbind(player_penalty_games1, player_penalty_games2, player_penalty_games3, player_penalty_games4)
+#     waiting_times <- merge(player_penalty_games, x_pens_season)
+#     return(waiting_times)
+#   } 
+# }
+
+
 
   # waiting_times <- ranking_games %>%
   #   group_by(player_id) %>%
@@ -471,19 +623,7 @@ waitingtimes2pen2018 <- waiting_times(2018, 2)
 # 
 # 
 # 
-# #the same analysis, but now for 4 penalties. isolating the players who had 4 penalties in the 2019-2020 season
-# four_major_players20192020 <- filter(majorpenalties20192020, major_penalty_count == 4)
-# saveRDS(four_major_players20192020,"intermediate_data/four_major_players20192020.rds")
-# 
-# # ranking the games where players had penalties through ranking the games that players played in in 2019-2020 season
-# four_majors20192020 <- filter(season20192020, player_id %in% four_major_players20192020$player_id)
-# four_majors20192020 <- distinct(four_majors20192020, play_id, .keep_all = TRUE)
-# four_majors20192020 <- four_majors20192020 %>%
-#   group_by(player_id) %>%
-#   summarise(game_order = dense_rank(date_time_GMT),
-#             penaltySeverity = penaltySeverity)
-# four_majors20192020 <- filter(four_majors20192020, penaltySeverity == "Major")
-# saveRDS(four_majors20192020,"intermediate_data/four_majors20192020.rds")
+
 # 
 # # data frame with waiting times between player's two penalties in 2019-2020 season- subtracts the rankings of games from each other
 # fourmajor_waitingtimes20192020 <- four_majors20192020 %>%
@@ -500,154 +640,8 @@ waitingtimes2pen2018 <- waiting_times(2018, 2)
 # names(waitingtimes20192020_proportions)[names(waitingtimes20192020_proportions) == "Freq"] <- "percentage"
 # saveRDS(waitingtimes20192020_proportions,"intermediate_data/waitingtimes20192020_proportions.rds")
 
-# IGNORE
-
-#making a separate data frame for each season
-# season20002001 <- filter(all_plays, season == "20002001")
-# season20012002 <- filter(all_plays, season == "20012002")
-# season20022003 <- filter(all_plays, season == "20022003")
-# season20032004 <- filter(all_plays, season == "20032004")
-# season20042005 <- filter(all_plays, season == "20042005")
-# season20052006 <- filter(all_plays, season == "20052006")
-# season20062007 <- filter(all_plays, season == "20062007")
-# season20072008 <- filter(all_plays, season == "20072008")
-# season20082009 <- filter(all_plays, season == "20082009")
-# season20092010 <- filter(all_plays, season == "20092010")
-# season20102011 <- filter(all_plays, season == "20102011")
-# season20112012 <- filter(all_plays, season == "20112012")
-# season20122013 <- filter(all_plays, season == "20122013")
-# season20132014 <- filter(all_plays, season == "20132014")
-# season20142015 <- filter(all_plays, season == "20142015")
-# season20152016 <- filter(all_plays, season == "20152016")
-# season20162017 <- filter(all_plays, season == "20162017")
-# season20172018 <- filter(all_plays, season == "20172018")
-# season20182019 <- filter(all_plays, season == "20182019")
-# season20202021 <- filter(all_plays, season == "20202021")
-# season20212022 <- filter(all_plays, season == "20212022")
 
 
-#  player_games20002001 <- season20002001 %>%
-#    group_by(player_id) %>%
-#    summarize(game_count = n_distinct(unique(game_id)),
-#              penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
-#    )
-# 
-#  fixedwindow_2000 <- filter(player_games2000, penalty_count == 2)
-# 
-# 
-# # Bar graph showing the distribution of all of the games played by players who had 2 penalties in 2000
-# fixedwindow2000 <- ggplot(fixedwindow_2000, aes(x = player_id, y = game_count) ) +
-#   geom_bar(stat = "identity")
-# print(fixedwindow2000)
-# 
-#  player_games20012002 <- season20012002 %>%
-#    group_by(player_id) %>%
-#    summarize(game_count = n_distinct(unique(game_id)),
-#              penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
-#    )
-# 
-#  player_games20022003 <- season20022003 %>%
-#    group_by(player_id) %>%
-#    summarize(game_count = n_distinct(unique(game_id)),
-#              penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
-#    )
-# 
-#  player_games20032004 <- season20032004 %>%
-#    group_by(player_id) %>%
-#    summarize(game_count = n_distinct(unique(game_id)),
-#              penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
-#    )
-# 
-#  player_games20042005 <- season20042005 %>%
-#    group_by(player_id) %>%
-#    summarize(game_count = n_distinct(unique(game_id)),
-#              penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
-#    )
-# 
-#  player_games20052006 <- season20052006 %>%
-#    group_by(player_id) %>%
-#    summarize(game_count = n_distinct(unique(game_id)),
-#              penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
-#    )
-# 
-#  player_games20062007 <- season20062007 %>%
-#    group_by(player_id) %>%
-#    summarize(game_count = n_distinct(unique(game_id)),
-#              penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
-#    )
-# 
-#  player_games20072008 <- season20072008 %>%
-#    group_by(player_id) %>%
-#    summarize(game_count = n_distinct(unique(game_id)),
-#                           penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
-#    )
-# 
-#  player_games20082009 <- season20082009 %>%
-#    group_by(player_id) %>%
-#    summarize(game_count = n_distinct(unique(game_id)),
-#              penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
-#    )
-# 
-#  player_games20092010 <- season20092010 %>%
-#    group_by(player_id) %>%
-#    summarize(game_count = n_distinct(unique(game_id)),
-#              penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
-#    )
-# 
-#  player_games20102011 <- season20102011 %>%
-#    group_by(player_id) %>%
-#    summarize(game_count = n_distinct(unique(game_id)),
-#              penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
-#    )
-# 
-#  player_games20112012 <- season20112012 %>%
-#    group_by(player_id) %>%
-#    summarize(game_count = n_distinct(unique(game_id)),
-#              penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
-#    )
-# 
-#  player_games20122013 <- season20122013 %>%
-#    group_by(player_id) %>%
-#    summarize(game_count = n_distinct(unique(game_id)),
-#              penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
-#    )
-# 
-#  player_games20132014 <- season20132014 %>%
-#    group_by(player_id) %>%
-#    summarize(game_count = n_distinct(unique(game_id)),
-#              penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
-#    )
-# 
-#  player_games20142015 <- season20142015 %>%
-#    group_by(player_id) %>%
-#    summarize(game_count = n_distinct(unique(game_id)),
-#              penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
-#    )
-# 
-#  player_games20152016 <- season20152016 %>%
-#    group_by(player_id) %>%
-#    summarize(game_count = n_distinct(unique(game_id)),
-#              penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
-#    )
-# 
-#  player_games20162017 <- season20162017 %>%
-#    group_by(player_id) %>%
-#    summarize(game_count = n_distinct(unique(game_id)),
-#              penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
-#    )
-#  
-#  player_games20172018 <- season20172018 %>%
-#    group_by(player_id) %>%
-#    summarize(game_count = n_distinct(unique(game_id)),
-#              penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
-#    )
-# 
-# 
-#  player_games20182019 <- season20182019 %>%
-#    group_by(player_id) %>%
-#    summarize(game_count = n_distinct(unique(game_id)),
-#              penalty_count = n_distinct(unique(play_id[playerType == "PenaltyOn"]))
-#    )
 
 
 
