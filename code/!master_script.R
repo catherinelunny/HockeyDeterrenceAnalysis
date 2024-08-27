@@ -1,0 +1,8 @@
+callr::rscript("code/00_data_preparation.R")
+callr::rscript("code/01_playerpenalty_plots.R")
+callr::rscript("code/02_histograms_careers.R")
+callr::rscript("code/03_normalize_total_minutes.R")
+callr::rscript("code/04_waiting_times.R")
+callr::rscript("code/05_major_waiting_times.R")
+callr::rscript("code/06_minor_waiting_times.R")
+callr::rscript("code/07_draft_waitingtimes_between_each_penalty.R")
