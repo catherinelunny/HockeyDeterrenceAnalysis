@@ -1,4 +1,8 @@
-function (year, penalty_severity = NULL, penalties1 = NULL, 
+# function that returns a data frame with player penalty games and the game differences between them
+# the three data frames are returned in a list
+# enter specific penalty numbers if you want, but if left null the function will use the top 3 most frequent penalty counts from the season_highest_pen_freq function for the year
+
+waiting_times <- function (year, penalty_severity = NULL, penalties1 = NULL, 
           penalties2 = NULL, penalties3 = NULL) 
 {
   season_highest_pen_freq <- most_common_num_pens(year, penalty_severity)
@@ -12,39 +16,73 @@ function (year, penalty_severity = NULL, penalties1 = NULL,
     penalties3 <- season_highest_pen_freq[3]
   }
   season <- season_plays(year)
-  x_pens_season1 <- subset(fixednumber_penalties_season(year, 
-                                                        penalties1, penalty_severity), select = -penalty_count)
-  players_with_x_pens1 <- fixednumber_penalties_season(year, 
-                                                       penalties1, penalty_severity)$player_id
-  x_pen_playergames1 <- filter(season, player_id %in% players_with_x_pens1)
-  noduplicates1 <- distinct(x_pen_playergames1, play_id, .keep_all = TRUE)
-  ranking_games1 <- noduplicates1 %>% group_by(player_id) %>% 
-    summarise(game_order = dense_rank(date_time_GMT), playerType = playerType, 
-              penaltySeverity = penaltySeverity)
-  penalties_only1 <- filter(ranking_games1, playerType == 
-                              "PenaltyOn", penaltySeverity == penalty_severity)
-  x_pens_season2 <- subset(fixednumber_penalties_season(year, 
-                                                        penalties2, penalty_severity), select = -penalty_count)
-  players_with_x_pens2 <- fixednumber_penalties_season(year, 
-                                                       penalties2, penalty_severity)$player_id
-  x_pen_playergames2 <- filter(season, player_id %in% players_with_x_pens2)
-  noduplicates2 <- distinct(x_pen_playergames2, play_id, .keep_all = TRUE)
-  ranking_games2 <- noduplicates2 %>% group_by(player_id) %>% 
-    summarise(game_order = dense_rank(date_time_GMT), playerType = playerType, 
-              penaltySeverity = penaltySeverity)
-  penalties_only2 <- filter(ranking_games2, playerType == 
-                              "PenaltyOn", penaltySeverity == penalty_severity)
-  x_pens_season3 <- subset(fixednumber_penalties_season(year, 
-                                                        penalties3, penalty_severity), select = -penalty_count)
-  players_with_x_pens3 <- fixednumber_penalties_season(year, 
-                                                       penalties3, penalty_severity)$player_id
-  x_pen_playergames3 <- filter(season, player_id %in% players_with_x_pens3)
-  noduplicates3 <- distinct(x_pen_playergames3, play_id, .keep_all = TRUE)
-  ranking_games3 <- noduplicates3 %>% group_by(player_id) %>% 
-    summarise(game_order = dense_rank(date_time_GMT), playerType = playerType, 
-              penaltySeverity = penaltySeverity)
-  penalties_only3 <- filter(ranking_games3, playerType == 
-                              "PenaltyOn", penaltySeverity == penalty_severity)
+  if (is.null(penalty_severity)) {
+    x_pens_season1 <- subset(fixednumber_penalties_season(year, 
+                                                          penalties1, penalty_severity), select = -penalty_count)
+    players_with_x_pens1 <- fixednumber_penalties_season(year, 
+                                                         penalties1, penalty_severity)$player_id
+    x_pen_playergames1 <- filter(season, player_id %in% players_with_x_pens1)
+    noduplicates1 <- distinct(x_pen_playergames1, play_id, .keep_all = TRUE)
+    ranking_games1 <- noduplicates1 %>% group_by(player_id) %>% 
+      summarise(game_order = dense_rank(date_time_GMT), playerType = playerType)
+    penalties_only1 <- filter(ranking_games1, playerType == 
+                                "PenaltyOn")
+    x_pens_season2 <- subset(fixednumber_penalties_season(year, 
+                                                          penalties2, penalty_severity), select = -penalty_count)
+    players_with_x_pens2 <- fixednumber_penalties_season(year, 
+                                                         penalties2, penalty_severity)$player_id
+    x_pen_playergames2 <- filter(season, player_id %in% players_with_x_pens2)
+    noduplicates2 <- distinct(x_pen_playergames2, play_id, .keep_all = TRUE)
+    ranking_games2 <- noduplicates2 %>% group_by(player_id) %>% 
+      summarise(game_order = dense_rank(date_time_GMT), playerType = playerType)
+    penalties_only2 <- filter(ranking_games2, playerType == 
+                                "PenaltyOn")
+    x_pens_season3 <- subset(fixednumber_penalties_season(year, 
+                                                          penalties3, penalty_severity), select = -penalty_count)
+    players_with_x_pens3 <- fixednumber_penalties_season(year, 
+                                                         penalties3, penalty_severity)$player_id
+    x_pen_playergames3 <- filter(season, player_id %in% players_with_x_pens3)
+    noduplicates3 <- distinct(x_pen_playergames3, play_id, .keep_all = TRUE)
+    ranking_games3 <- noduplicates3 %>% group_by(player_id) %>% 
+      summarise(game_order = dense_rank(date_time_GMT), playerType = playerType)
+    penalties_only3 <- filter(ranking_games3, playerType == 
+                                "PenaltyOn")
+  } else {
+    x_pens_season1 <- subset(fixednumber_penalties_season(year, 
+                                                          penalties1, penalty_severity), select = -penalty_count)
+    players_with_x_pens1 <- fixednumber_penalties_season(year, 
+                                                         penalties1, penalty_severity)$player_id
+    x_pen_playergames1 <- filter(season, player_id %in% players_with_x_pens1)
+    noduplicates1 <- distinct(x_pen_playergames1, play_id, .keep_all = TRUE)
+    ranking_games1 <- noduplicates1 %>% group_by(player_id) %>% 
+      summarise(game_order = dense_rank(date_time_GMT), playerType = playerType, 
+                penaltySeverity = penaltySeverity)
+    penalties_only1 <- filter(ranking_games1, playerType == 
+                                "PenaltyOn", penaltySeverity == penalty_severity)
+    x_pens_season2 <- subset(fixednumber_penalties_season(year, 
+                                                          penalties2, penalty_severity), select = -penalty_count)
+    players_with_x_pens2 <- fixednumber_penalties_season(year, 
+                                                         penalties2, penalty_severity)$player_id
+    x_pen_playergames2 <- filter(season, player_id %in% players_with_x_pens2)
+    noduplicates2 <- distinct(x_pen_playergames2, play_id, .keep_all = TRUE)
+    ranking_games2 <- noduplicates2 %>% group_by(player_id) %>% 
+      summarise(game_order = dense_rank(date_time_GMT), playerType = playerType, 
+                penaltySeverity = penaltySeverity)
+    penalties_only2 <- filter(ranking_games2, playerType == 
+                                "PenaltyOn", penaltySeverity == penalty_severity)
+    x_pens_season3 <- subset(fixednumber_penalties_season(year, 
+                                                          penalties3, penalty_severity), select = -penalty_count)
+    players_with_x_pens3 <- fixednumber_penalties_season(year, 
+                                                         penalties3, penalty_severity)$player_id
+    x_pen_playergames3 <- filter(season, player_id %in% players_with_x_pens3)
+    noduplicates3 <- distinct(x_pen_playergames3, play_id, .keep_all = TRUE)
+    ranking_games3 <- noduplicates3 %>% group_by(player_id) %>% 
+      summarise(game_order = dense_rank(date_time_GMT), playerType = playerType, 
+                penaltySeverity = penaltySeverity)
+    penalties_only3 <- filter(ranking_games3, playerType == 
+                                "PenaltyOn", penaltySeverity == penalty_severity)
+  }
+  
   waitingtimes_list <- list()
   waitingtimes1_list <- list()
   for (player in penalties_only1$player_id) {

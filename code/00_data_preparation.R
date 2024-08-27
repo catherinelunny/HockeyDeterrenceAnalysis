@@ -144,7 +144,6 @@ season_plays <- function(year) {
   return(seasondf)
 }
 
-save(season_plays, file = "intermediate_data/season_plays.RData")
 
 #variable counting the number of games in the season - input the year that is the first half of the desired season (for example for the 2019-2020 season input 2019)
 game_count_season <- function(year) {
@@ -153,7 +152,6 @@ game_count_season <- function(year) {
   return(game_count)
 }
 
-save(game_count_season, file = "intermediate_data/game_count_season.RData")
 
 # Data frame that shows the number of games and penalties for players during a specific season. can specify penalty severity minor or major or with all together
 # input the year that is the first half of the desired season (for the 2019-2020 season input 2019)
@@ -180,7 +178,6 @@ save(game_count_season, file = "intermediate_data/game_count_season.RData")
    return(player_games)
  }
  
-save(player_games_season, file = "intermediate_data/player_games_season.RData")
 
 # function that returns the most common frequencies of penalties of the desired type in a season. 
 most_common_num_pens <- function(year, penalty_severity = NULL) {
@@ -204,7 +201,6 @@ most_common_num_pens <- function(year, penalty_severity = NULL) {
   }
 }
 
-save(most_common_num_pens, file = "intermediate_data/most_common_num_pens.RData")
 
 #function that returns a data frame with players with a specific number of penalties in a season by filtering by the number of penalties
 fixednumber_penalties_season <- function(year, penalties, penalty_severity = NULL) {
@@ -221,7 +217,7 @@ fixednumber_penalties_season <- function(year, penalties, penalty_severity = NUL
     
 }
 
-save(fixednumber_penalties_season, file = "intermediate_data/fixednumber_penalties_season.RData")
+
 
 # function that returns a data frame with player penalty games and the game differences between them
 # the three data frames are returned in a list
@@ -387,7 +383,7 @@ waiting_times <- function(year, penalty_severity = NULL, penalties1 = NULL, pena
  
 }
 
-save(waiting_times, file = "intermediate_data/waiting_times.RData")
+
 
 # old waiting times function that did not use a loop and only worked for specfic numbers of penalty frequencies, disregard
 

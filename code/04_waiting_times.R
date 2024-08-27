@@ -22,13 +22,12 @@ normalized_player_data <- readRDS("intermediate_data/normalized_player_data.rds"
 averages <- readRDS("intermediate_data/averages.rds")
 player_game_count <- readRDS("intermediate_data/player_game_count.rds")
 
-#load("intermediate_data/waiting_times.RData")
 source("code/function_waiting_times.R")
-load("intermediate_data/most_common_num_pens.RData")
-load("intermediate_data/fixednumber_penalties_season.RData")
-load("intermediate_data/season_plays.RData")
-load("intermediate_data/game_count_season.RData")
-load("intermediate_data/player_games_season.RData")
+source("code/function_most_common_num_pens.R")
+source("code/function_fixednumber_penalties_season.R")
+source("code/function_season_plays.R")
+source("code/function_game_count_season.R")
+source("code/function_player_games_season.R")
 
 # # all of the steps to make the plot for one waiting time. This is what is used for all of the different penalty amounts, the specific year and index data frame just has to be brought in
 # 

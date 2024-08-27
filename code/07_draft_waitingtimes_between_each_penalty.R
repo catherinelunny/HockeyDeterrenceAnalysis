@@ -2,6 +2,33 @@ library(tidyverse)
 library(ggplot2)
 library(patchwork)
 
+player_penalties <- read.csv("data/plays_players.csv")
+penalties <- read.csv("data/game_penalties.csv")
+players <- read.csv("data/player_info.csv")
+plays_players1 <- readRDS("data/plays_players1.rds")
+games <- read.csv("data/games.csv")
+
+filtered_penalties <- readRDS("intermediate_data/filtered_penalties.rds")
+games_ordered <- readRDS("data/games_ordered.rds")
+complete_penalty_info <- readRDS("intermediate_data/complete_penalty_info.rds")
+all_player_plays <- readRDS("intermediate_data/all_player_plays.rds")
+careers <- readRDS("intermediate_data/careers.rds")
+career_data <- readRDS("intermediate_data/career_data.rds")
+mean_share_table <- readRDS("intermediate_data/mean_share_table.rds")
+player_games <- readRDS("intermediate_data/player_games.rds")
+tab_games_by_players <- readRDS("intermediate_data/tab_games_by_players.rds")
+tab_seasons_by_players <- readRDS("intermediate_data/tab_seasons_by_players.rds")
+normalized_player_data <- readRDS("intermediate_data/normalized_player_data.rds")
+averages <- readRDS("intermediate_data/averages.rds")
+player_game_count <- readRDS("intermediate_data/player_game_count.rds")
+
+source("code/function_waiting_times.R")
+source("code/function_most_common_num_pens.R")
+source("code/function_fixednumber_penalties_season.R")
+source("code/function_season_plays.R")
+source("code/function_game_count_season.R")
+source("code/function_player_games_season.R")
+
 #2018-2019
 
 # This is the code that returns all of the waiting times on one plot, counting each player twice and not accounting for the fact
