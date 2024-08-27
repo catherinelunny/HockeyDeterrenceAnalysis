@@ -1,3 +1,5 @@
+# plots that look at the number of seasons and games played by players throughout their careers
+
 library(tidyverse)
 
 # Alex' snippet

@@ -1,3 +1,5 @@
+# a series of plots that look at relationships between players and penalties in their careers
+
 library(tidyverse)
 unique_player_play_info <- readRDS("intermediate_data/unique_player_play_info.rds")
 careers <- readRDS("intermediate_data/careers.rds")

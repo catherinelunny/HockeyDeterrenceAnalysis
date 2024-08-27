@@ -1,3 +1,5 @@
+# plots that look at the average amount of plays players have in a season on average based on the number of seasons they have played in
+
 library(tidyverse)
 
 all_player_plays <- readRDS("intermediate_data/all_player_plays.rds")
@@ -11,7 +13,7 @@ q <- ggplot(averages,
   theme_minimal() +
   labs(x="# plays in a season on average", y= "# of players")
 
-ggsave(filename = "results/hist_avg_games.png",plot = q, bg = "white")
+ggsave(filename = "results/hist_avg_plays.png",plot = q, bg = "white")
 
 # 
 # library(ggplot2)
