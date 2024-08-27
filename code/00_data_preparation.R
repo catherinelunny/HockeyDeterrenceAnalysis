@@ -253,16 +253,17 @@ waiting_times <- function(year, penalty_severity = NULL, penalties1 = NULL, pena
   
   # each row occurs twice in the data frame, this way it only appears once
   noduplicates1 <- distinct(x_pen_playergames1, play_id, .keep_all = TRUE)
-  
+
   # ranking all of the season games for the players
   ranking_games1 <- noduplicates1 %>%
     group_by(player_id) %>%
     summarise(game_order = dense_rank(date_time_GMT),
               # keeping the playerType column so that we can filter out the penalty games
-              playerType = playerType)
+              playerType = playerType,
+              penaltySeverity = penaltySeverity)
   
   # data frame that just has players and the ranking of their penalty games
-  penalties_only1 <- filter(ranking_games1, playerType == "PenaltyOn")
+  penalties_only1 <- filter(ranking_games1, playerType == "PenaltyOn", penaltySeverity == penalty_severity)
   
   # the same thing but for the second penalty number
   x_pens_season2 <- subset(fixednumber_penalties_season(year, penalties2, penalty_severity), select = -penalty_count)
@@ -275,9 +276,10 @@ waiting_times <- function(year, penalty_severity = NULL, penalties1 = NULL, pena
   ranking_games2 <- noduplicates2 %>%
     group_by(player_id) %>%
     summarise(game_order = dense_rank(date_time_GMT),
-              playerType = playerType)
+              playerType = playerType,
+              penaltySeverity = penaltySeverity)
   
-  penalties_only2 <- filter(ranking_games2, playerType == "PenaltyOn")
+  penalties_only2 <- filter(ranking_games2, playerType == "PenaltyOn", penaltySeverity == penalty_severity)
   
   # the same thing but for the third penalty number
   x_pens_season3 <- subset(fixednumber_penalties_season(year, penalties3, penalty_severity), select = -penalty_count)
@@ -290,9 +292,10 @@ waiting_times <- function(year, penalty_severity = NULL, penalties1 = NULL, pena
   ranking_games3 <- noduplicates3 %>%
     group_by(player_id) %>%
     summarise(game_order = dense_rank(date_time_GMT),
-              playerType = playerType)
+              playerType = playerType,
+              penaltySeverity = penaltySeverity)
   
-  penalties_only3 <- filter(ranking_games3, playerType == "PenaltyOn")
+  penalties_only3 <- filter(ranking_games3, playerType == "PenaltyOn", penaltySeverity == penalty_severity)
   
   # main list where all of the waiting times data frames will be stored in
   waitingtimes_list <- list()

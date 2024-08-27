@@ -4,21 +4,7 @@ all_player_plays <- readRDS("intermediate_data/all_player_plays.rds")
 normalized_player_data <- readRDS("intermediate_data/normalized_player_data.rds")
 averages <- readRDS("intermediate_data/averages.rds")
 
-
-normalized_player_data <- all_player_plays %>%
-  group_by(player_id, season) %>%
-  summarise(total_plays = length(unique(play_id))) %>%
-  group_by(player_id) %>%
-  mutate(normalized_plays = total_plays / sum(total_plays))
-saveRDS(normalized_player_data,"intermediate_data/normalized_player_data.rds")
-
-averages <- normalized_player_data %>%
-  group_by(player_id) %>%
-  summarise(seasons_played = length(unique(season)),
-            total_plays = sum(total_plays)) %>%
-  mutate(avg_plays_season = total_plays / seasons_played)
-saveRDS(averages,"intermediate_data/averages.rds")
-
+# histogram of the average amount of plays per season for players
 q <- ggplot(averages, 
             aes(x = avg_plays_season)) +
   geom_histogram(bins = 100) +

@@ -22,19 +22,22 @@ normalized_player_data <- readRDS("intermediate_data/normalized_player_data.rds"
 averages <- readRDS("intermediate_data/averages.rds")
 player_game_count <- readRDS("intermediate_data/player_game_count.rds")
 
-waiting_times <- load("~/HockeyDeterrenceAnalysis/intermediate_data/waiting_times.RData")
-most_common_num_pens <- load("~/HockeyDeterrenceAnalysis/intermediate_data/most_common_num_pens.RData")
-fixednumber_penalties_season <- load("~/HockeyDeterrenceAnalysis/intermediate_data/fixednumber_penalties_season.RData")
-season_plays <- load("~/HockeyDeterrenceAnalysis/intermediate_data/season_plays.RData")
-game_count_season <- load("~/HockeyDeterrenceAnalysis/intermediate_data/game_count_season.RData")
-player_games_season <- load("~/HockeyDeterrenceAnalysis/intermediate_data/player_games_season.RData")
+load("~/HockeyDeterrenceAnalysis/intermediate_data/waiting_times.RData")
+load("~/HockeyDeterrenceAnalysis/intermediate_data/most_common_num_pens.RData")
+load("~/HockeyDeterrenceAnalysis/intermediate_data/fixednumber_penalties_season.RData")
+load("~/HockeyDeterrenceAnalysis/intermediate_data/season_plays.RData")
+load("~/HockeyDeterrenceAnalysis/intermediate_data/game_count_season.RData")
+load("~/HockeyDeterrenceAnalysis/intermediate_data/player_games_season.RData")
 
 
 #2019-2020
 #waiting times for the top 3 most frequent amount of penalties for players to have
+
+# calling the list of data frames created by the waiting_times function for the season and then going data frame by data frame in the list of waiting times
 waitingtimes20192020 <- waiting_times(2019)
 waitingtimes20192020_1 <- as.data.frame(waitingtimes20192020[1])
 
+# the highest game count for a player in the given data frame, used to determine the axis of the plot and the largest possible waiting time to determine how many rows are needed in the waitingtimesdf
 most_games <- max(waitingtimes20192020_1$game_count)
 
 # dataframe counting the observed counts of each observed waiting time
@@ -45,6 +48,7 @@ counts_obs <- waitingtimes20192020_1 %>%
 # main dataframe that will have all possible waiting times and counts
 waitingtimes <- data.frame(game_diff = 0:most_games)
 waitingtimes <- merge(waitingtimes, counts_obs, by = "game_diff", all.x = TRUE)
+# if there is a game difference in the range that is not observed, it will come up as NA. since we want to look at all waiting times, this command changes the NA to 0
 for (diff in 1:nrow(waitingtimes)) {
   if (is.na(waitingtimes$obs_count[diff])) {
     waitingtimes$obs_count[diff] <- 0
@@ -52,35 +56,39 @@ for (diff in 1:nrow(waitingtimes)) {
 }
 
 
-#loop picking random games out of the games they played each season to have a penalty in 
+#loop picking random games out of the games each player played each season to have penalties in 
+# can set the amount of loops higher, will have to change the range of values below to the new upper bound + 2. ie in this case we are looking at i in 1:100, so the waitingtimes data frame will have 102 columns (the 100 random plus the observed and the player ids)
+# list that will hold the results of all 100 iterations
 randomwaitingtimes_list <- list()
 for (i in 1:100) {
+  # list that will hold the results of each player in each iteration
   randomwaitingtimes1_list <- list()
-  for (p in 1:n_distinct(waitingtimes20192020_1$player_id)) {
-    for (player in waitingtimes20192020_1$player_id) {
-      num_games <- waitingtimes20192020_1$game_count[waitingtimes20192020_1$player_id == player]
-      num_penalties <- sum(waitingtimes20192020_1$player_id == player) + 1
-      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
-      randomgames_ordered <- sort(randomgames)
-      player_diffs <- filter(waitingtimes20192020_1, player_id == player)
+  for (player in waitingtimes20192020_1$player_id) {
+    num_games <- waitingtimes20192020_1$game_count[waitingtimes20192020_1$player_id == player]
+    num_penalties <- sum(waitingtimes20192020_1$player_id == player) + 1
+    randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+    randomgames_ordered <- sort(randomgames)
+    player_diffs <- filter(waitingtimes20192020_1, player_id == player)
+    
+    randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA, game_count = NA)
+    for (game in 1:(num_penalties - 1)){
+      penalty_game <- randomgames_ordered[game]
+      randomwaitingtimes$penalty_game[game] <- penalty_game
       
-      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
-      for (game in 1:(num_penalties - 1)){
-        penalty_game <- randomgames_ordered[game]
-        randomwaitingtimes$penalty_game[game] <- penalty_game
-        
-        next_penalty_game <- randomgames_ordered[game + 1]
-        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
-        
-        game_diff <- abs(next_penalty_game - penalty_game)
-        randomwaitingtimes$game_diff[game] <- game_diff
-      }
+      next_penalty_game <- randomgames_ordered[game + 1]
+      randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+      
+      game_diff <- abs(next_penalty_game - penalty_game)
+      randomwaitingtimes$game_diff[game] <- game_diff
+      
+      randomwaitingtimes$game_count[game] <- num_games
     }
-    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
+    randomwaitingtimes1_list[[player]] <- randomwaitingtimes
   }
+
   
-  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
-  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
+  randomwaitingtimes1 <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes1)
   
   
   game_counts <- randomwaitingtimes_list[[i]] %>%
@@ -160,31 +168,32 @@ for (diff in 1:nrow(waitingtimes)) {
 randomwaitingtimes_list <- list()
 for (i in 1:100) {
   randomwaitingtimes1_list <- list()
-  for (p in 1:n_distinct(waitingtimes20192020_2$player_id)) {
-    for (player in waitingtimes20192020_2$player_id) {
-      num_games <- waitingtimes20192020_2$game_count[waitingtimes20192020_2$player_id == player]
-      num_penalties <- sum(waitingtimes20192020_2$player_id == player) + 1
-      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
-      randomgames_ordered <- sort(randomgames)
-      player_diffs <- filter(waitingtimes20192020_2, player_id == player)
+  for (player in waitingtimes20192020_2$player_id) {
+    num_games <- waitingtimes20192020_2$game_count[waitingtimes20192020_2$player_id == player]
+    num_penalties <- sum(waitingtimes20192020_2$player_id == player) + 1
+    randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+    randomgames_ordered <- sort(randomgames)
+    player_diffs <- filter(waitingtimes20192020_2, player_id == player)
+    
+    randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA, game_count = NA)
+    for (game in 1:(num_penalties - 1)){
+      penalty_game <- randomgames_ordered[game]
+      randomwaitingtimes$penalty_game[game] <- penalty_game
       
-      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
-      for (game in 1:(num_penalties - 1)){
-        penalty_game <- randomgames_ordered[game]
-        randomwaitingtimes$penalty_game[game] <- penalty_game
-        
-        next_penalty_game <- randomgames_ordered[game + 1]
-        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
-        
-        game_diff <- abs(next_penalty_game - penalty_game)
-        randomwaitingtimes$game_diff[game] <- game_diff
-      }
+      next_penalty_game <- randomgames_ordered[game + 1]
+      randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+      
+      game_diff <- abs(next_penalty_game - penalty_game)
+      randomwaitingtimes$game_diff[game] <- game_diff
+      
+      randomwaitingtimes$game_count[game] <- num_games
     }
-    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
+    randomwaitingtimes1_list[[player]] <- randomwaitingtimes
   }
   
-  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
-  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
+  
+  randomwaitingtimes1 <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes1)
   
   
   game_counts <- randomwaitingtimes_list[[i]] %>%
@@ -264,31 +273,32 @@ for (diff in 1:nrow(waitingtimes)) {
 randomwaitingtimes_list <- list()
 for (i in 1:100) {
   randomwaitingtimes1_list <- list()
-  for (p in 1:n_distinct(waitingtimes20192020_3$player_id)) {
-    for (player in waitingtimes20192020_3$player_id) {
-      num_games <- waitingtimes20192020_3$game_count[waitingtimes20192020_3$player_id == player]
-      num_penalties <- sum(waitingtimes20192020_3$player_id == player) + 1
-      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
-      randomgames_ordered <- sort(randomgames)
-      player_diffs <- filter(waitingtimes20192020_3, player_id == player)
+  for (player in waitingtimes20192020_3$player_id) {
+    num_games <- waitingtimes20192020_3$game_count[waitingtimes20192020_3$player_id == player]
+    num_penalties <- sum(waitingtimes20192020_3$player_id == player) + 1
+    randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+    randomgames_ordered <- sort(randomgames)
+    player_diffs <- filter(waitingtimes20192020_3, player_id == player)
+    
+    randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA, game_count = NA)
+    for (game in 1:(num_penalties - 1)){
+      penalty_game <- randomgames_ordered[game]
+      randomwaitingtimes$penalty_game[game] <- penalty_game
       
-      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
-      for (game in 1:(num_penalties - 1)){
-        penalty_game <- randomgames_ordered[game]
-        randomwaitingtimes$penalty_game[game] <- penalty_game
-        
-        next_penalty_game <- randomgames_ordered[game + 1]
-        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
-        
-        game_diff <- abs(next_penalty_game - penalty_game)
-        randomwaitingtimes$game_diff[game] <- game_diff
-      }
+      next_penalty_game <- randomgames_ordered[game + 1]
+      randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+      
+      game_diff <- abs(next_penalty_game - penalty_game)
+      randomwaitingtimes$game_diff[game] <- game_diff
+      
+      randomwaitingtimes$game_count[game] <- num_games
     }
-    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
+    randomwaitingtimes1_list[[player]] <- randomwaitingtimes
   }
   
-  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
-  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
+  
+  randomwaitingtimes1 <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes1)
   
   
   game_counts <- randomwaitingtimes_list[[i]] %>%
@@ -370,31 +380,32 @@ for (diff in 1:nrow(waitingtimes)) {
 randomwaitingtimes_list <- list()
 for (i in 1:100) {
   randomwaitingtimes1_list <- list()
-  for (p in 1:n_distinct(waitingtimes20182019_1$player_id)) {
-    for (player in waitingtimes20182019_1$player_id) {
-      num_games <- waitingtimes20182019_1$game_count[waitingtimes20182019_1$player_id == player]
-      num_penalties <- sum(waitingtimes20182019_1$player_id == player) + 1
-      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
-      randomgames_ordered <- sort(randomgames)
-      player_diffs <- filter(waitingtimes20182019_1, player_id == player)
+  for (player in waitingtimes20182019_1$player_id) {
+    num_games <- waitingtimes20182019_1$game_count[waitingtimes20182019_1$player_id == player]
+    num_penalties <- sum(waitingtimes20182019_1$player_id == player) + 1
+    randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+    randomgames_ordered <- sort(randomgames)
+    player_diffs <- filter(waitingtimes20182019_1, player_id == player)
+    
+    randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA, game_count = NA)
+    for (game in 1:(num_penalties - 1)){
+      penalty_game <- randomgames_ordered[game]
+      randomwaitingtimes$penalty_game[game] <- penalty_game
       
-      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
-      for (game in 1:(num_penalties - 1)){
-        penalty_game <- randomgames_ordered[game]
-        randomwaitingtimes$penalty_game[game] <- penalty_game
-        
-        next_penalty_game <- randomgames_ordered[game + 1]
-        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
-        
-        game_diff <- abs(next_penalty_game - penalty_game)
-        randomwaitingtimes$game_diff[game] <- game_diff
-      }
+      next_penalty_game <- randomgames_ordered[game + 1]
+      randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+      
+      game_diff <- abs(next_penalty_game - penalty_game)
+      randomwaitingtimes$game_diff[game] <- game_diff
+      
+      randomwaitingtimes$game_count[game] <- num_games
     }
-    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
+    randomwaitingtimes1_list[[player]] <- randomwaitingtimes
   }
   
-  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
-  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
+  
+  randomwaitingtimes1 <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes1)
   
   
   game_counts <- randomwaitingtimes_list[[i]] %>%
@@ -474,31 +485,32 @@ for (diff in 1:nrow(waitingtimes)) {
 randomwaitingtimes_list <- list()
 for (i in 1:100) {
   randomwaitingtimes1_list <- list()
-  for (p in 1:n_distinct(waitingtimes20182019_2$player_id)) {
-    for (player in waitingtimes20182019_2$player_id) {
-      num_games <- waitingtimes20182019_2$game_count[waitingtimes20182019_2$player_id == player]
-      num_penalties <- sum(waitingtimes20182019_2$player_id == player) + 1
-      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
-      randomgames_ordered <- sort(randomgames)
-      player_diffs <- filter(waitingtimes20182019_2, player_id == player)
+  for (player in waitingtimes20182019_2$player_id) {
+    num_games <- waitingtimes20182019_2$game_count[waitingtimes20182019_2$player_id == player]
+    num_penalties <- sum(waitingtimes20182019_2$player_id == player) + 1
+    randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+    randomgames_ordered <- sort(randomgames)
+    player_diffs <- filter(waitingtimes20182019_2, player_id == player)
+    
+    randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA, game_count = NA)
+    for (game in 1:(num_penalties - 1)){
+      penalty_game <- randomgames_ordered[game]
+      randomwaitingtimes$penalty_game[game] <- penalty_game
       
-      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
-      for (game in 1:(num_penalties - 1)){
-        penalty_game <- randomgames_ordered[game]
-        randomwaitingtimes$penalty_game[game] <- penalty_game
-        
-        next_penalty_game <- randomgames_ordered[game + 1]
-        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
-        
-        game_diff <- abs(next_penalty_game - penalty_game)
-        randomwaitingtimes$game_diff[game] <- game_diff
-      }
+      next_penalty_game <- randomgames_ordered[game + 1]
+      randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+      
+      game_diff <- abs(next_penalty_game - penalty_game)
+      randomwaitingtimes$game_diff[game] <- game_diff
+      
+      randomwaitingtimes$game_count[game] <- num_games
     }
-    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
+    randomwaitingtimes1_list[[player]] <- randomwaitingtimes
   }
   
-  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
-  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
+  
+  randomwaitingtimes1 <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes1)
   
   
   game_counts <- randomwaitingtimes_list[[i]] %>%
@@ -578,31 +590,32 @@ for (diff in 1:nrow(waitingtimes)) {
 randomwaitingtimes_list <- list()
 for (i in 1:100) {
   randomwaitingtimes1_list <- list()
-  for (p in 1:n_distinct(waitingtimes20182019_3$player_id)) {
-    for (player in waitingtimes20182019_3$player_id) {
-      num_games <- waitingtimes20182019_3$game_count[waitingtimes20182019_3$player_id == player]
-      num_penalties <- sum(waitingtimes20182019_3$player_id == player) + 1
-      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
-      randomgames_ordered <- sort(randomgames)
-      player_diffs <- filter(waitingtimes20182019_3, player_id == player)
+  for (player in waitingtimes20182019_3$player_id) {
+    num_games <- waitingtimes20182019_3$game_count[waitingtimes20182019_3$player_id == player]
+    num_penalties <- sum(waitingtimes20182019_3$player_id == player) + 1
+    randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+    randomgames_ordered <- sort(randomgames)
+    player_diffs <- filter(waitingtimes20182019_3, player_id == player)
+    
+    randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA, game_count = NA)
+    for (game in 1:(num_penalties - 1)){
+      penalty_game <- randomgames_ordered[game]
+      randomwaitingtimes$penalty_game[game] <- penalty_game
       
-      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
-      for (game in 1:(num_penalties - 1)){
-        penalty_game <- randomgames_ordered[game]
-        randomwaitingtimes$penalty_game[game] <- penalty_game
-        
-        next_penalty_game <- randomgames_ordered[game + 1]
-        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
-        
-        game_diff <- abs(next_penalty_game - penalty_game)
-        randomwaitingtimes$game_diff[game] <- game_diff
-      }
+      next_penalty_game <- randomgames_ordered[game + 1]
+      randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+      
+      game_diff <- abs(next_penalty_game - penalty_game)
+      randomwaitingtimes$game_diff[game] <- game_diff
+      
+      randomwaitingtimes$game_count[game] <- num_games
     }
-    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
+    randomwaitingtimes1_list[[player]] <- randomwaitingtimes
   }
   
-  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
-  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
+  
+  randomwaitingtimes1 <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes1)
   
   
   game_counts <- randomwaitingtimes_list[[i]] %>%
@@ -685,31 +698,32 @@ for (diff in 1:nrow(waitingtimes)) {
 randomwaitingtimes_list <- list()
 for (i in 1:100) {
   randomwaitingtimes1_list <- list()
-  for (p in 1:n_distinct(waitingtimes20172018_1$player_id)) {
-    for (player in waitingtimes20172018_1$player_id) {
-      num_games <- waitingtimes20172018_1$game_count[waitingtimes20172018_1$player_id == player]
-      num_penalties <- sum(waitingtimes20172018_1$player_id == player) + 1
-      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
-      randomgames_ordered <- sort(randomgames)
-      player_diffs <- filter(waitingtimes20172018_1, player_id == player)
+  for (player in waitingtimes20172018_1$player_id) {
+    num_games <- waitingtimes20172018_1$game_count[waitingtimes20172018_1$player_id == player]
+    num_penalties <- sum(waitingtimes20172018_1$player_id == player) + 1
+    randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+    randomgames_ordered <- sort(randomgames)
+    player_diffs <- filter(waitingtimes20172018_1, player_id == player)
+    
+    randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA, game_count = NA)
+    for (game in 1:(num_penalties - 1)){
+      penalty_game <- randomgames_ordered[game]
+      randomwaitingtimes$penalty_game[game] <- penalty_game
       
-      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
-      for (game in 1:(num_penalties - 1)){
-        penalty_game <- randomgames_ordered[game]
-        randomwaitingtimes$penalty_game[game] <- penalty_game
-        
-        next_penalty_game <- randomgames_ordered[game + 1]
-        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
-        
-        game_diff <- abs(next_penalty_game - penalty_game)
-        randomwaitingtimes$game_diff[game] <- game_diff
-      }
+      next_penalty_game <- randomgames_ordered[game + 1]
+      randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+      
+      game_diff <- abs(next_penalty_game - penalty_game)
+      randomwaitingtimes$game_diff[game] <- game_diff
+      
+      randomwaitingtimes$game_count[game] <- num_games
     }
-    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
+    randomwaitingtimes1_list[[player]] <- randomwaitingtimes
   }
   
-  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
-  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
+  
+  randomwaitingtimes1 <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes1)
   
   
   game_counts <- randomwaitingtimes_list[[i]] %>%
@@ -789,31 +803,32 @@ for (diff in 1:nrow(waitingtimes)) {
 randomwaitingtimes_list <- list()
 for (i in 1:100) {
   randomwaitingtimes1_list <- list()
-  for (p in 1:n_distinct(waitingtimes20172018_2$player_id)) {
-    for (player in waitingtimes20172018_2$player_id) {
-      num_games <- waitingtimes20172018_2$game_count[waitingtimes20172018_2$player_id == player]
-      num_penalties <- sum(waitingtimes20172018_2$player_id == player) + 1
-      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
-      randomgames_ordered <- sort(randomgames)
-      player_diffs <- filter(waitingtimes20172018_2, player_id == player)
+  for (player in waitingtimes20172018_2$player_id) {
+    num_games <- waitingtimes20172018_2$game_count[waitingtimes20172018_2$player_id == player]
+    num_penalties <- sum(waitingtimes20172018_2$player_id == player) + 1
+    randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+    randomgames_ordered <- sort(randomgames)
+    player_diffs <- filter(waitingtimes20172018_2, player_id == player)
+    
+    randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA, game_count = NA)
+    for (game in 1:(num_penalties - 1)){
+      penalty_game <- randomgames_ordered[game]
+      randomwaitingtimes$penalty_game[game] <- penalty_game
       
-      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
-      for (game in 1:(num_penalties - 1)){
-        penalty_game <- randomgames_ordered[game]
-        randomwaitingtimes$penalty_game[game] <- penalty_game
-        
-        next_penalty_game <- randomgames_ordered[game + 1]
-        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
-        
-        game_diff <- abs(next_penalty_game - penalty_game)
-        randomwaitingtimes$game_diff[game] <- game_diff
-      }
+      next_penalty_game <- randomgames_ordered[game + 1]
+      randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+      
+      game_diff <- abs(next_penalty_game - penalty_game)
+      randomwaitingtimes$game_diff[game] <- game_diff
+      
+      randomwaitingtimes$game_count[game] <- num_games
     }
-    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
+    randomwaitingtimes1_list[[player]] <- randomwaitingtimes
   }
   
-  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
-  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
+  
+  randomwaitingtimes1 <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes1)
   
   
   game_counts <- randomwaitingtimes_list[[i]] %>%
@@ -893,31 +908,32 @@ for (diff in 1:nrow(waitingtimes)) {
 randomwaitingtimes_list <- list()
 for (i in 1:100) {
   randomwaitingtimes1_list <- list()
-  for (p in 1:n_distinct(waitingtimes20172018_3$player_id)) {
-    for (player in waitingtimes20172018_3$player_id) {
-      num_games <- waitingtimes20172018_3$game_count[waitingtimes20172018_3$player_id == player]
-      num_penalties <- sum(waitingtimes20172018_3$player_id == player) + 1
-      randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
-      randomgames_ordered <- sort(randomgames)
-      player_diffs <- filter(waitingtimes20172018_3, player_id == player)
+  for (player in waitingtimes20172018_3$player_id) {
+    num_games <- waitingtimes20172018_3$game_count[waitingtimes20172018_3$player_id == player]
+    num_penalties <- sum(waitingtimes20172018_3$player_id == player) + 1
+    randomgames <- sample(1:num_games, num_penalties, replace = TRUE)
+    randomgames_ordered <- sort(randomgames)
+    player_diffs <- filter(waitingtimes20172018_3, player_id == player)
+    
+    randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA, game_count = NA)
+    for (game in 1:(num_penalties - 1)){
+      penalty_game <- randomgames_ordered[game]
+      randomwaitingtimes$penalty_game[game] <- penalty_game
       
-      randomwaitingtimes <- data.frame(player_id = player_diffs$player_id, penalty_game = NA, next_penalty_game = NA, game_diff = NA)
-      for (game in 1:(num_penalties - 1)){
-        penalty_game <- randomgames_ordered[game]
-        randomwaitingtimes$penalty_game[game] <- penalty_game
-        
-        next_penalty_game <- randomgames_ordered[game + 1]
-        randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
-        
-        game_diff <- abs(next_penalty_game - penalty_game)
-        randomwaitingtimes$game_diff[game] <- game_diff
-      }
+      next_penalty_game <- randomgames_ordered[game + 1]
+      randomwaitingtimes$next_penalty_game[game] <- next_penalty_game
+      
+      game_diff <- abs(next_penalty_game - penalty_game)
+      randomwaitingtimes$game_diff[game] <- game_diff
+      
+      randomwaitingtimes$game_count[game] <- num_games
     }
-    randomwaitingtimes1_list[[p]] <- randomwaitingtimes
+    randomwaitingtimes1_list[[player]] <- randomwaitingtimes
   }
   
-  randomwaitingtimes <- do.call(rbind, randomwaitingtimes1_list)
-  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes)
+  
+  randomwaitingtimes1 <- do.call(rbind, randomwaitingtimes1_list)
+  randomwaitingtimes_list[[i]] <- as.data.frame(randomwaitingtimes1)
   
   
   game_counts <- randomwaitingtimes_list[[i]] %>%

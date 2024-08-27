@@ -15,6 +15,7 @@ print(p)
 
 ggsave(filename = "results/hist_games_played.png",plot = p, bg = "white")
 
+# histogram of the  number of unique seasons played by the players
 t <- ggplot(tab_seasons_by_players, 
             aes(x = unique_seasons)) +
   geom_histogram(bins = 100) +

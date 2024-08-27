@@ -22,12 +22,12 @@ normalized_player_data <- readRDS("intermediate_data/normalized_player_data.rds"
 averages <- readRDS("intermediate_data/averages.rds")
 player_game_count <- readRDS("intermediate_data/player_game_count.rds")
 
-waiting_times <- load("~/HockeyDeterrenceAnalysis/intermediate_data/waiting_times.RData")
-most_common_num_pens <- load("~/HockeyDeterrenceAnalysis/intermediate_data/most_common_num_pens.RData")
-fixednumber_penalties_season <- load("~/HockeyDeterrenceAnalysis/intermediate_data/fixednumber_penalties_season.RData")
-season_plays <- load("~/HockeyDeterrenceAnalysis/intermediate_data/season_plays.RData")
-game_count_season <- load("~/HockeyDeterrenceAnalysis/intermediate_data/game_count_season.RData")
-player_games_season <- load("~/HockeyDeterrenceAnalysis/intermediate_data/player_games_season.RData")
+load("~/HockeyDeterrenceAnalysis/intermediate_data/waiting_times.RData")
+load("~/HockeyDeterrenceAnalysis/intermediate_data/most_common_num_pens.RData")
+load("~/HockeyDeterrenceAnalysis/intermediate_data/fixednumber_penalties_season.RData")
+load("~/HockeyDeterrenceAnalysis/intermediate_data/season_plays.RData")
+load("~/HockeyDeterrenceAnalysis/intermediate_data/game_count_season.RData")
+load("~/HockeyDeterrenceAnalysis/intermediate_data/player_games_season.RData")
 
 #2019-2020
 #waiting times for the top 3 most frequent amount of penalties for players to have
