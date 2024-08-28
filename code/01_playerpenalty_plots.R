@@ -4,8 +4,6 @@ library(tidyverse)
 unique_player_play_info <- readRDS("intermediate_data/unique_player_play_info.rds")
 careers <- readRDS("intermediate_data/careers.rds")
 career_data <- readRDS("intermediate_data/career_data.rds") 
-season20192020 <- readRDS("intermediate_data/season20192020.rds")
-fixedwindow_20192020 <- readRDS("intermediate_data/fixedwindow_20192020.rds")
 player_games <- readRDS("intermediate_data/player_games.rds")
 
 
@@ -47,7 +45,7 @@ ggsave("results/old_boxplot_penalty_time_over_career.png",p,bg="white")
 
 
 
-
+# OLD- incorrect histograms - player_id should not be x-axis
 # histogram where player_id and game_id are of type integer
 # p <- ggplot(filtered_all_plays,
 #        aes(x = player_id, group = game_id, color = game_id)) +
@@ -68,21 +66,21 @@ ggsave("results/old_boxplot_penalty_time_over_career.png",p,bg="white")
 
 
 #plot of number of penalties a player had in a given year
-filtered_season20192020 <- filter(season20192020, playerType == "PenaltyOn")
-filtered_season20192020 <- distinct(filtered_season20192020)
-plays20192020 <- ggplot(filtered_season20192020,
-                    aes(x = player_id)) +
-  geom_bar(stat = "count")
-print(plays20192020)
-ggsave("results/2019PenaltyCount.png", plays20192020)
+# filtered_season20192020 <- filter(season20192020, playerType == "PenaltyOn")
+# filtered_season20192020 <- distinct(filtered_season20192020)
+# plays20192020 <- ggplot(filtered_season20192020,
+#                         aes(x = player_id)) +
+#   geom_bar(stat = "count")
+# print(plays20192020)
+# ggsave("results/2019PenaltyCount.png", plays20192020)
 
 
 
 # Bar graph showing the distribution of all of the games played by players who had 2 penalties in 2000
-fixedwindow20192020 <- ggplot(fixedwindow_20192020, aes(x = player_id, y = game_count) ) +
-  geom_bar(stat = "identity")
-print(fixedwindow20192020)
-ggsave("results/20192020twopenalties.png", fixedwindow20192020)
+# fixedwindow20192020 <- ggplot(fixedwindow_20192020, aes(x = player_id, y = game_count) ) +
+#   geom_bar(stat = "identity")
+# print(fixedwindow20192020)
+# ggsave("results/20192020twopenalties.png", fixedwindow20192020)
 
 # player_games2020 <- year2020 %>%
 #   group_by(player_id) %>%
@@ -94,9 +92,9 @@ ggsave("results/20192020twopenalties.png", fixedwindow20192020)
 # print(player_games)
 
 #plots of total number of games played in a year for each player
-game_count_bar <- ggplot(data = player_games) +
-  geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5)
-print(game_count_bar)
+# game_count_bar <- ggplot(data = player_games) +
+#   geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5)
+# print(game_count_bar)
 
 # game_count_bar2000 <- ggplot(data = player_games2000) +
 #   geom_bar(mapping = aes(x = player_id, y = game_count), stat = "identity", width = 1.5) +
@@ -204,4 +202,4 @@ print(game_count_bar)
 
 
 
-  
+

@@ -15,7 +15,7 @@ q <- ggplot(averages,
 
 ggsave(filename = "results/hist_avg_plays.png",plot = q, bg = "white")
 
-# 
+# OLD
 # library(ggplot2)
 # 
 # t <- ggplot(normalized_player_data, aes(x = normalized_plays, fill = player_id)) +
