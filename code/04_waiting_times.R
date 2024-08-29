@@ -18,6 +18,7 @@ mean_share_table <- readRDS("intermediate_data/mean_share_table.rds")
 player_games <- readRDS("intermediate_data/player_games.rds")
 tab_games_by_players <- readRDS("intermediate_data/tab_games_by_players.rds")
 tab_seasons_by_players <- readRDS("intermediate_data/tab_seasons_by_players.rds")
+tab_penalties_by_players <- readRDS("intermediate_data/tab_penalties_by_players.rds")
 normalized_player_data <- readRDS("intermediate_data/normalized_player_data.rds")
 averages <- readRDS("intermediate_data/averages.rds")
 player_game_count <- readRDS("intermediate_data/player_game_count.rds")
@@ -2052,6 +2053,7 @@ p
 ggsave("results/waitingtimes20142015_3.png",p,bg="white")
 
 
+# OLD- season20192020 data set does not exist anymore (it is stored in intermediatedata/old- replaced by the season_plays function 
 # season20192020 <- readRDS("intermediate_data/season20192020.rds")
 # twopenaltieswaitingtimes20192020 <- readRDS("intermediate_data/twopenaltieswaitingtimes20192020.rds")
 # game_count2019 <- n_distinct(season20192020$game_id)

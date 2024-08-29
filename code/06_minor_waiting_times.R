@@ -18,6 +18,7 @@ mean_share_table <- readRDS("intermediate_data/mean_share_table.rds")
 player_games <- readRDS("intermediate_data/player_games.rds")
 tab_games_by_players <- readRDS("intermediate_data/tab_games_by_players.rds")
 tab_seasons_by_players <- readRDS("intermediate_data/tab_seasons_by_players.rds")
+tab_penalties_by_players <- readRDS("intermediate_data/tab_penalties_by_players.rds")
 normalized_player_data <- readRDS("intermediate_data/normalized_player_data.rds")
 averages <- readRDS("intermediate_data/averages.rds")
 player_game_count <- readRDS("intermediate_data/player_game_count.rds")
@@ -130,7 +131,7 @@ source("code/function_player_games_season.R")
 #   geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
 #   geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
 #   geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
-#   scale_y_continuous(breaks = (0:100)) +
+#   scale_y_continuous(breaks = (0:200)) +
 #   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
 #   labs(title = paste0("Waiting Times of Players with ", num_penalties, "Minor Penalties in the year-year Season"), x = "Game difference", y = "Count of players")+
 #   theme_minimal() +
@@ -236,7 +237,7 @@ p <- ggplot(data = minorwaitingtimes_quantiles) +
   geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
   geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
   geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  scale_y_continuous(breaks = (0:200)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
   labs(title = paste0("Waiting Times of Players with ", num_penalties, " Minor Penalties in the 2019-2020 Season"), x = "Game difference", y = "Count of players")+
   theme_minimal() +
@@ -340,7 +341,7 @@ p <- ggplot(data = minorwaitingtimes_quantiles) +
   geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
   geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
   geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  scale_y_continuous(breaks = (0:200)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
   labs(title = paste0("Waiting Times of Players with ", num_penalties, " Minor Penalties in the 2019-2020 Season"), x = "Game difference", y = "Count of players")+
   theme_minimal() +
@@ -444,7 +445,7 @@ p <- ggplot(data = minorwaitingtimes_quantiles) +
   geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
   geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
   geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  scale_y_continuous(breaks = (0:200)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
   labs(title = paste0("Waiting Times of Players with ", num_penalties, " Minor Penalties in the 2019-2020 Season"), x = "Game difference", y = "Count of players")+
   theme_minimal() +
@@ -550,7 +551,7 @@ p <- ggplot(data = minorwaitingtimes_quantiles) +
   geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
   geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
   geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  scale_y_continuous(breaks = (0:200)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
   labs(title = paste0("Waiting Times of Players with ", num_penalties, " Minor Penalties in the 2018-2019 Season"), x = "Game difference", y = "Count of players")+
   theme_minimal() +
@@ -654,7 +655,7 @@ p <- ggplot(data = minorwaitingtimes_quantiles) +
   geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
   geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
   geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  scale_y_continuous(breaks = (0:200)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
   labs(title = paste0("Waiting Times of Players with ", num_penalties, " Minor Penalties in the 2018-2019 Season"), x = "Game difference", y = "Count of players")+
   theme_minimal() +
@@ -758,7 +759,7 @@ p <- ggplot(data = minorwaitingtimes_quantiles) +
   geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
   geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
   geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  scale_y_continuous(breaks = (0:200)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
   labs(title = paste0("Waiting Times of Players with ", num_penalties, " Minor Penalties in the 2018-2019 Season"), x = "Game difference", y = "Count of players")+
   theme_minimal() +
@@ -865,7 +866,7 @@ p <- ggplot(data = minorwaitingtimes_quantiles) +
   geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
   geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
   geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  scale_y_continuous(breaks = (0:200)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
   labs(title = paste0("Waiting Times of Players with ", num_penalties, " Minor Penalties in the 2017-2018 Season"), x = "Game difference", y = "Count of players")+
   theme_minimal() +
@@ -969,7 +970,7 @@ p <- ggplot(data = minorwaitingtimes_quantiles) +
   geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
   geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
   geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  scale_y_continuous(breaks = (0:200)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
   labs(title = paste0("Waiting Times of Players with ", num_penalties, " Minor Penalties in the 2017-2018 Season"), x = "Game difference", y = "Count of players")+
   theme_minimal() +
@@ -1073,7 +1074,7 @@ p <- ggplot(data = minorwaitingtimes_quantiles) +
   geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
   geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
   geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  scale_y_continuous(breaks = (0:200)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
   labs(title = paste0("Waiting Times of Players with ", num_penalties, " Minor Penalties in the 2017-2018 Season"), x = "Game difference", y = "Count of players")+
   theme_minimal() +
@@ -1179,7 +1180,7 @@ p <- ggplot(data = minorwaitingtimes_quantiles) +
   geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
   geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
   geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  scale_y_continuous(breaks = (0:200)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
   labs(title = paste0("Waiting Times of Players with ", num_penalties, " Minor Penalties in the 2016-2017 Season"), x = "Game difference", y = "Count of players")+
   theme_minimal() +
@@ -1283,7 +1284,7 @@ p <- ggplot(data = minorwaitingtimes_quantiles) +
   geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
   geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
   geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  scale_y_continuous(breaks = (0:200)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
   labs(title = paste0("Waiting Times of Players with ", num_penalties, " Minor Penalties in the 2016-2017 Season"), x = "Game difference", y = "Count of players")+
   theme_minimal() +
@@ -1387,7 +1388,7 @@ p <- ggplot(data = minorwaitingtimes_quantiles) +
   geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
   geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
   geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  scale_y_continuous(breaks = (0:200)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
   labs(title = paste0("Waiting Times of Players with ", num_penalties, " Minor Penalties in the 2016-2017 Season"), x = "Game difference", y = "Count of players")+
   theme_minimal() +
@@ -1493,7 +1494,7 @@ p <- ggplot(data = minorwaitingtimes_quantiles) +
   geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
   geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
   geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  scale_y_continuous(breaks = (0:200)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
   labs(title = paste0("Waiting Times of Players with ", num_penalties, " Minor Penalties in the 2015-2016 Season"), x = "Game difference", y = "Count of players")+
   theme_minimal() +
@@ -1597,7 +1598,7 @@ p <- ggplot(data = minorwaitingtimes_quantiles) +
   geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
   geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
   geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  scale_y_continuous(breaks = (0:200)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
   labs(title = paste0("Waiting Times of Players with ", num_penalties, " Minor Penalties in the 2015-2016 Season"), x = "Game difference", y = "Count of players")+
   theme_minimal() +
@@ -1701,7 +1702,7 @@ p <- ggplot(data = minorwaitingtimes_quantiles) +
   geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
   geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
   geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  scale_y_continuous(breaks = (0:200)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
   labs(title = paste0("Waiting Times of Players with ", num_penalties, " Minor Penalties in the 2015-2016 Season"), x = "Game difference", y = "Count of players")+
   theme_minimal() +
@@ -1807,7 +1808,7 @@ p <- ggplot(data = minorwaitingtimes_quantiles) +
   geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
   geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
   geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  scale_y_continuous(breaks = (0:200)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
   labs(title = paste0("Waiting Times of Players with ", num_penalties, " Minor Penalties in the 2014-2015 Season"), x = "Game difference", y = "Count of players")+
   theme_minimal() +
@@ -1911,7 +1912,7 @@ p <- ggplot(data = minorwaitingtimes_quantiles) +
   geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
   geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
   geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  scale_y_continuous(breaks = (0:200)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
   labs(title = paste0("Waiting Times of Players with ", num_penalties, " Minor Penalties in the 2014-2015 Season"), x = "Game difference", y = "Count of players")+
   theme_minimal() +
@@ -2015,7 +2016,7 @@ p <- ggplot(data = minorwaitingtimes_quantiles) +
   geom_line(mapping = aes(x = game_diff, y = lower_bound, group=1, color = "Lower Bound")) +
   geom_point(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
   geom_line(mapping = aes(x = game_diff, y = upper_bound, group=1, color = "Upper Bound")) +
-  scale_y_continuous(breaks = (0:35)) +
+  scale_y_continuous(breaks = (0:200)) +
   scale_x_continuous(breaks = seq(0, most_games, by = 2)) +
   labs(title = paste0("Waiting Times of Players with ", num_penalties, " Minor Penalties in the 2014-2015 Season"), x = "Game difference", y = "Count of players")+
   theme_minimal() +

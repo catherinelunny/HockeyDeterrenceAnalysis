@@ -3,6 +3,8 @@ library(patchwork)
 
 # defining all of the functions and intermediate data
 
+# note: there are 3602 players in the data
+
 # Open data
 # contains the play, game, and the player the penalty was on 
 player_penalties <- read.csv("data/plays_players.csv")
@@ -111,6 +113,12 @@ tab_seasons_by_players <- all_player_plays %>%
   group_by(player_id) %>%
   summarise(unique_seasons = length(unique(season)))
 saveRDS(tab_seasons_by_players,"intermediate_data/tab_seasons_by_players.rds")
+
+# shows how many penalties each player had
+tab_penalties_by_players <- all_player_plays %>%
+  group_by(player_id) %>%
+  summarise(unique_penalties = n_distinct(unique(play_id[playerType == "PenaltyOn"])))
+saveRDS(tab_penalties_by_players,"intermediate_data/tab_penalties_by_players.rds")
 
 # data set that has the number of games a player played in each season and the percent of the total games in their career that accounts for
 normalized_player_data <- all_player_plays %>%

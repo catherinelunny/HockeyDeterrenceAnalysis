@@ -18,6 +18,7 @@ mean_share_table <- readRDS("intermediate_data/mean_share_table.rds")
 player_games <- readRDS("intermediate_data/player_games.rds")
 tab_games_by_players <- readRDS("intermediate_data/tab_games_by_players.rds")
 tab_seasons_by_players <- readRDS("intermediate_data/tab_seasons_by_players.rds")
+tab_penalties_by_players <- readRDS("intermediate_data/tab_penalties_by_players.rds")
 normalized_player_data <- readRDS("intermediate_data/normalized_player_data.rds")
 averages <- readRDS("intermediate_data/averages.rds")
 player_game_count <- readRDS("intermediate_data/player_game_count.rds")
@@ -166,6 +167,6 @@ for (penalty in 1:(num_penalties - 1)) {
 } #pen loop
 
 waitingtimesplot <- wrap_plots(waitingtimesplot_list) + plot_annotation(title = "Waiting Times Between Each Penalty for Players with ", num_penalties, " Penalties in the 2018-2019 Season")
-  
+ggsave("results/draft_waitingtimesplot.png",waitingtimesplot,bg = "white")  
   
 
